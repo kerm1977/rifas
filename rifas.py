@@ -468,10 +468,13 @@ def eliminar_rifa(raffle_id):
         flash('Rifa eliminada permanentemente, incluyendo todos sus números vendidos.', 'success')
         
     except Exception as e:
-        db.close()
+        # Hacemos rollback si algo falla
+        db.rollback() 
         flash(f'Error al eliminar la rifa: {e}', 'danger')
         
-    db.close()
+    finally: # Aseguramos que la conexión se cierre
+        db.close()
+        
     return redirect(url_for('rifas.ver_rifas'))
 
 
@@ -661,27 +664,31 @@ def detalle_rifa(raffle_id):
             # --- Proceso de Acciones ---
             placeholders = ','.join('?' * len(selection_ids))
             
-            if action == 'delete_selection':
-                db.execute(f'DELETE FROM selection WHERE id IN ({placeholders})', selection_ids)
-                db.commit()
-                flash(f'Los números han sido liberados y eliminados.', 'success')
-            
-            elif action == 'cancel_selection':
-                # MODIFICACIÓN: Solo superusuarios pueden cancelar, ya revisado arriba.
-                if not current_user.is_superuser():
-                    flash('Acción denegada. Solo superusuarios pueden cancelar selecciones.', 'danger')
-                    db.close()
-                    return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-                    
-                # Marcamos como cancelado (1)
-                db.execute(f'UPDATE selection SET is_canceled = 1 WHERE id IN ({placeholders})', selection_ids)
-                db.commit()
-                flash('La selección ha sido marcada como CANCELADA. El card se ha puesto verde.', 'success')
-            
-            elif action == 'edit_selection':
-                flash('Funcionalidad de Edición de Cliente no implementada aún.', 'info')
-            
-            db.close()
+            try: # Agregamos un try/finally aquí también
+                if action == 'delete_selection':
+                    db.execute(f'DELETE FROM selection WHERE id IN ({placeholders})', selection_ids)
+                    db.commit()
+                    flash(f'Los números han sido liberados y eliminados.', 'success')
+                
+                elif action == 'cancel_selection':
+                    # MODIFICACIÓN: Solo superusuarios pueden cancelar, ya revisado arriba.
+                    if not current_user.is_superuser():
+                        flash('Acción denegada. Solo superusuarios pueden cancelar selecciones.', 'danger')
+                        return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+                        
+                    # Marcamos como cancelado (1)
+                    db.execute(f'UPDATE selection SET is_canceled = 1 WHERE id IN ({placeholders})', selection_ids)
+                    db.commit()
+                    flash('La selección ha sido marcada como CANCELADA. El card se ha puesto verde.', 'success')
+                
+                elif action == 'edit_selection':
+                    flash('Funcionalidad de Edición de Cliente no implementada aún.', 'info')
+            except Exception as e:
+                db.rollback()
+                flash(f'Error al realizar la acción {action}: {e}', 'danger')
+            finally:
+                db.close()
+                
             return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
 
@@ -704,6 +711,11 @@ def unauthorized_callback():
 @bp.teardown_request
 def close_connection(exception):
     """Cierra la conexión a la DB después de cada request."""
+    # Nota: Flask tiene un mecanismo para manejar esto, pero si usamos la implementación de
+    # get_db() con un contexto (with app.app_context()), el cierre debe ser manual o 
+    # manejado por Flask. Tu implementación actual con get_db() requiere cierres manuales 
+    # en cada ruta. Mantenemos el teardown como respaldo, aunque no es estrictamente 
+    # necesario si cada ruta cierra la conexión.
     db = getattr(bp, '_database', None)
     if db is not None:
         db.close()

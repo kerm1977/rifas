@@ -2,7 +2,9 @@
 function prepareWinnerModal(raffleId, raffleName, winnersAnnounced) {
     document.getElementById('winner-raffle-id').value = raffleId;
     document.getElementById('winner-raffle-name').textContent = raffleName;
-    document.getElementById('winner-form').action = "{{ url_for('rifas.anunciar_ganador', raffle_id=0) }}".replace('/0', '/' + raffleId);
+    
+    // CORRECCIÓN: Usamos la ruta hardcodeada '/rifas/anunciar_ganador/' para que funcione si el JS se carga como archivo estático.
+    document.getElementById('winner-form').action = '/rifas/anunciar_ganador/' + raffleId;
     
     // Limpiar inputs al abrir
     document.getElementById('num_winners').value = '1';
@@ -54,8 +56,13 @@ function prepareDeleteModal(raffleId, raffleName) {
     // Mostrar el nombre de la rifa en el encabezado
     document.getElementById('raffle-to-delete-name').textContent = raffleName;
     
-    // Configurar la acción del formulario
-    document.getElementById('delete-raffle-form').action = "{{ url_for('rifas.eliminar_rifa', raffle_id=0) }}".replace('/0', '/' + raffleId);
+    // CORRECCIÓN: Usamos la ruta hardcodeada '/rifas/eliminar/'
+    const deleteForm = document.getElementById('delete-raffle-form');
+    if (deleteForm) {
+        deleteForm.action = '/rifas/eliminar/' + raffleId;
+    } else {
+        console.error("Error: delete-raffle-form no encontrado.");
+    }
     
     // Asegurar que el checkbox esté desmarcado al abrir
     document.getElementById('confirm-delete-checkbox').checked = false;

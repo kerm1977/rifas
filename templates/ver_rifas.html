@@ -52,11 +52,11 @@
                                 {% set winner = get_winner_info(rifa.id, number) %}
                                 <div class="d-flex justify-content-between text-sm text-yellow-700 mb-1">
                                     <span class="font-bold">Número Ganador: {{ number }}</span>
-                                    {% if winner %}
+                                    {% if winner.status and winner.status != 'CANCELADO' and winner.status != 'ERROR_DB' and winner.status != 'NO_VENDIDO_O_ELIMINADO' %}
                                         <!-- Aseguramos que el nombre del cliente se trunque si es muy largo -->
                                         <span class="text-truncate" style="max-width: 60%;">Ganador: {{ winner.customer_name }}</span>
                                     {% else %}
-                                        <span>(No vendido o Cancelado)</span>
+                                        <span>(No vendido o {{ winner.status if winner.status == 'CANCELADO' else 'Eliminado' }})</span>
                                     {% endif %}
                                 </div>
                             {% endfor %}
@@ -92,8 +92,9 @@
                                 class="btn btn-sm text-white bg-gray-500 hover:bg-gray-600 py-2 rounded-xl text-sm font-medium transition"
                                 data-bs-toggle="modal" 
                                 data-bs-target="#delete-raffle-modal-bs"
-                                onclick="prepareDeleteModal({{ rifa.id }}, '{{ rifa.name }}')">
-                            <i class="fas fa-times-circle me-1"></i> Eliminar Rifa
+                                onclick="prepareDeleteModal({{ rifa.id }}, '{{ rifa.name }}')"> 
+                            <!-- CORRECCIÓN ESTÉTICA: Usamos un ícono de basura para que se vea bien -->
+                            <i class="fas fa-trash-alt me-1"></i> Eliminar Rifa
                         </button>
                         
                         {% endif %}
@@ -212,8 +213,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <!-- El formulario POSTeará a la ruta de eliminación -->
-            <form method="POST" id="delete-raffle-form">
+            <!-- El formulario POSTeará a la ruta de eliminación. Dejamos el action vacío para que el JS lo establezca. -->
+            <form method="POST" id="delete-raffle-form" action="">
                 <div class="modal-body pt-2">
                     <input type="hidden" name="raffle_id" id="raffle-to-delete-id">
                     
@@ -281,7 +282,8 @@
     function prepareWinnerModal(raffleId, raffleName, winnersAnnounced) {
         document.getElementById('winner-raffle-id').value = raffleId;
         document.getElementById('winner-raffle-name').textContent = raffleName;
-        document.getElementById('winner-form').action = "{{ url_for('rifas.anunciar_ganador', raffle_id=0) }}".replace('/0', '/' + raffleId);
+        // CORRECCIÓN: Usar una ruta base para evitar que el Jinja se resuelva literalmente si el navegador lo intenta
+        document.getElementById('winner-form').action = "/rifas/anunciar_ganador/" + raffleId;
         
         // Limpiar inputs al abrir
         document.getElementById('num_winners').value = '1';
@@ -326,15 +328,22 @@
     }
     
     // NUEVA FUNCIÓN: Prepara el modal de eliminación de rifa
-    function prepareDeleteModal(raffleId, raffleName) {
+    // MODIFICACIÓN: Construimos el URL dentro del JS
+    function prepareDeleteModal(raffleId, raffleName) { 
         // Establecer el ID de la rifa en el formulario oculto
         document.getElementById('raffle-to-delete-id').value = raffleId;
         
         // Mostrar el nombre de la rifa en el encabezado
         document.getElementById('raffle-to-delete-name').textContent = raffleName;
         
-        // Configurar la acción del formulario
-        document.getElementById('delete-raffle-form').action = "{{ url_for('rifas.eliminar_rifa', raffle_id=0) }}".replace('/0', '/' + raffleId);
+        // SOLUCIÓN: Asignamos la URL completa ya construida en el cliente.
+        // Ahora el 'action' base del formulario es "", eliminando la confusión de Jinja.
+        const deleteForm = document.getElementById('delete-raffle-form');
+        if (deleteForm) {
+            deleteForm.action = "/rifas/eliminar/" + raffleId;
+        } else {
+            console.error("Error: delete-raffle-form no encontrado.");
+        }
         
         // Asegurar que el checkbox esté desmarcado al abrir
         document.getElementById('confirm-delete-checkbox').checked = false;
