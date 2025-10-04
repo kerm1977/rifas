@@ -166,10 +166,10 @@ function openEditModal(selectionIds, numbersList, customerName, customerPhone) {
 // --- NUEVA FUNCIÓN: CONFIRMACIÓN DE CANCELACIÓN (USA MODAL DE BOOTSTRAP) ---
 
 function confirmCancellation(selectionIds, customerName, isCanceled) {
+    // CORRECCIÓN: Si ya está cancelado (isCanceled == 1), no hacemos nada o mostramos un mensaje de consola.
     if (isCanceled === 1) {
-        // Si ya está cancelado, mostramos un mensaje usando un alert simple
-        // NOTA: Reemplazar window.alert con un modal custom si las restricciones son absolutas.
-        alert(`La selección para "${customerName}" ya está marcada como CANCELADA.`); 
+        console.log(`La selección para "${customerName}" ya está marcada como CANCELADA.`); 
+        // El botón ya debería estar deshabilitado en el HTML
         return;
     }
     

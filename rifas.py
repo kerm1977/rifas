@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import secrets
+import json # Necesario para manejar la lista de ganadores en JSON
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
@@ -90,6 +91,7 @@ def init_db():
     """)
 
     # 2. Crear tabla de Rifa
+    # MODIFICACIÓN: Agregamos winning_numbers
     db.execute("""
         CREATE TABLE IF NOT EXISTS raffle (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,7 +102,8 @@ def init_db():
             detail TEXT NOT NULL,
             raffle_date DATE NOT NULL,
             raffle_time TEXT,
-            image_filename TEXT NOT NULL
+            image_filename TEXT NOT NULL,
+            winning_numbers TEXT DEFAULT '[]' -- NUEVO: Almacenará un JSON string de números ganadores
         );
     """)
 
@@ -127,8 +130,14 @@ def init_db():
         db.execute("ALTER TABLE selection ADD COLUMN is_canceled BOOLEAN DEFAULT 0")
         db.commit()
     except sqlite3.OperationalError:
-        # Columna ya existe o error no relacionado
-        pass
+        pass # Columna ya existe o error no relacionado
+        
+    try:
+        # MIGARCIÓN para agregar la columna winning_numbers a raffle si falta
+        db.execute("ALTER TABLE raffle ADD COLUMN winning_numbers TEXT DEFAULT '[]'")
+        db.commit()
+    except sqlite3.OperationalError:
+        pass # Columna ya existe o error no relacionado
 
     # 4. Crear Superusuario permanente
     superuser_email = 'kenth1977@gmail.com'
@@ -165,7 +174,7 @@ def init_db():
 
     db.close()
 
-# --- Rutas de Autenticación ---
+# --- Rutas de Autenticación (Mantenidas) ---
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -266,8 +275,21 @@ def logout():
 def ver_rifas():
     """Vista pública para ver las rifas disponibles."""
     db = get_db()
-    rifas = db.execute('SELECT * FROM raffle ORDER BY raffle_date DESC').fetchall()
+    # MODIFICACIÓN: Traemos la columna winning_numbers
+    rifas_data = db.execute('SELECT * FROM raffle ORDER BY raffle_date DESC').fetchall()
     db.close()
+    
+    # Procesar los números ganadores (JSON string a lista de Python)
+    rifas = []
+    for rifa in rifas_data:
+        rifa_dict = dict(rifa)
+        try:
+            rifa_dict['winning_numbers'] = json.loads(rifa_dict['winning_numbers'])
+        except (json.JSONDecodeError, TypeError):
+            rifa_dict['winning_numbers'] = []
+            
+        rifas.append(rifa_dict)
+        
     return render_template('ver_rifas.html', title='Rifas Disponibles', rifas=rifas)
 
 @bp.route('/rifas/crear', methods=['GET', 'POST'])
@@ -305,8 +327,8 @@ def crear_rifa():
         try:
             db = get_db()
             db.execute("""
-                INSERT INTO raffle (raffle_number, name, price, prize, detail, raffle_date, raffle_time, image_filename)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO raffle (raffle_number, name, price, prize, detail, raffle_date, raffle_time, image_filename, winning_numbers)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 data.get('raffle_number'),
                 data.get('name'),
@@ -315,7 +337,8 @@ def crear_rifa():
                 data.get('detail'),
                 data.get('raffle_date'),
                 data.get('raffle_time') or None, # Hora opcional
-                filename
+                filename,
+                '[]' # Inicializar sin ganadores
             ))
             db.commit()
             db.close()
@@ -412,7 +435,121 @@ def editar_rifa(raffle_id):
     db.close()
     return render_template('editar_rifa.html', title=f'Editar Rifa: {rifa_dict["name"]}', rifa=rifa_dict)
 
-# --- Rutas de Detalle y Selección de Números ---
+# --- RUTA NUEVA: ELIMINAR RIFA ---
+@bp.route('/rifas/eliminar/<int:raffle_id>', methods=['POST'])
+@login_required
+def eliminar_rifa(raffle_id):
+    """Superuser: Elimina una rifa y sus datos asociados."""
+    if not current_user.is_superuser():
+        flash('Acceso denegado. Solo superusuarios pueden eliminar rifas.', 'danger')
+        return redirect(url_for('rifas.ver_rifas'))
+
+    db = get_db()
+    rifa = db.execute('SELECT id, image_filename FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
+    
+    if not rifa:
+        db.close()
+        flash('Error: Rifa no encontrada.', 'danger')
+        return redirect(url_for('rifas.ver_rifas'))
+
+    try:
+        # 1. Eliminar todas las selecciones asociadas (en cascada)
+        db.execute('DELETE FROM selection WHERE raffle_id = ?', (raffle_id,))
+        
+        # 2. Eliminar la rifa
+        db.execute('DELETE FROM raffle WHERE id = ?', (raffle_id,))
+        
+        # 3. Eliminar la imagen del disco
+        image_filepath = os.path.join(current_app.root_path, UPLOAD_FOLDER, rifa['image_filename'])
+        if os.path.exists(image_filepath):
+            os.remove(image_filepath)
+        
+        db.commit()
+        flash('Rifa eliminada permanentemente, incluyendo todos sus números vendidos.', 'success')
+        
+    except Exception as e:
+        db.close()
+        flash(f'Error al eliminar la rifa: {e}', 'danger')
+        
+    db.close()
+    return redirect(url_for('rifas.ver_rifas'))
+
+
+# --- RUTA PARA ANUNCIAR GANADOR ---
+@bp.route('/rifas/anunciar_ganador/<int:raffle_id>', methods=['POST'])
+@login_required
+def anunciar_ganador(raffle_id):
+    """Superuser: Recibe los números ganadores y los guarda/elimina en la rifa."""
+    if not current_user.is_superuser():
+        flash('Acceso denegado. Solo superusuarios pueden anunciar ganadores.', 'danger')
+        return redirect(url_for('rifas.ver_rifas'))
+
+    action = request.form.get('winner_action', 'announce')
+        
+    try:
+        db = get_db()
+        
+        if action == 'remove_winners':
+            # Acción para ELIMINAR GANADORES
+            db.execute("""
+                UPDATE raffle SET winning_numbers = '[]' WHERE id = ?
+            """, (raffle_id,))
+            db.commit()
+            flash('¡Ganadores eliminados! La rifa ha sido reseteada.', 'success')
+            
+            # Redirigir a la lista de rifas o al detalle (lista es más lógico después de un reset)
+            return redirect(url_for('rifas.ver_rifas')) 
+            
+        else: # action == 'announce'
+            # Acción para ANUNCIAR GANADORES (Lógica existente)
+            numbers_str = request.form.get('winning_numbers') # "05, 12, 45"
+            
+            if not numbers_str:
+                flash('Debe seleccionar al menos un número ganador.', 'danger')
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+            # Limpiar y validar los números (deben ser de 2 dígitos)
+            raw_numbers = [n.strip() for n in numbers_str.split(',') if n.strip()]
+            winning_numbers = []
+            
+            for num in raw_numbers:
+                # Formatear a 2 dígitos si es un número válido
+                try:
+                    # Aseguramos que el número tenga exactamente 2 dígitos, ej: 5 -> "05"
+                    formatted_num = f"{int(num):02d}" 
+                    winning_numbers.append(formatted_num)
+                except ValueError:
+                    flash(f'Advertencia: El número "{num}" no es un formato de número válido y fue ignorado.', 'warning')
+                    
+            if not winning_numbers:
+                flash('No se pudieron procesar números ganadores válidos.', 'danger')
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+            
+            # 1. Serializar la lista de ganadores a JSON string
+            winning_numbers_json = json.dumps(winning_numbers)
+            
+            # 2. Actualizar la tabla raffle
+            db.execute("""
+                UPDATE raffle SET winning_numbers = ? WHERE id = ?
+            """, (winning_numbers_json, raffle_id))
+            
+            db.commit()
+            
+            # 3. Mensaje de éxito
+            flash(f'Ganador(es) anunciado(s) exitosamente: {", ".join(winning_numbers)}.', 'success')
+            
+            # Redirigir al detalle de la rifa para ver el mensaje de ganador
+            return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+        
+    except Exception as e:
+        flash(f'Error al guardar/eliminar el(los) ganador(es): {e}', 'danger')
+    finally:
+        db.close()
+        
+    return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+
+# --- Rutas de Detalle y Selección de Números (Mantenidas) ---
 
 @bp.route('/rifas/<int:raffle_id>', methods=['GET', 'POST'])
 def detalle_rifa(raffle_id):
@@ -425,8 +562,13 @@ def detalle_rifa(raffle_id):
         flash('Rifa no encontrada.', 'danger')
         return redirect(url_for('rifas.ver_rifas'))
     
+    # Procesar rifa_dict y winning_numbers
     rifa_dict = dict(rifa)
-
+    try:
+        rifa_dict['winning_numbers'] = json.loads(rifa_dict['winning_numbers'])
+    except (json.JSONDecodeError, TypeError):
+        rifa_dict['winning_numbers'] = []
+        
     # Obtener todas las selecciones (vendidas/reservadas)
     # MODIFICACIÓN: Incluimos la columna 'is_canceled' en el SELECT
     selections = db.execute('SELECT id, raffle_id, number, customer_name, customer_phone, selection_password_hash, created_at, is_canceled FROM selection WHERE raffle_id = ?', (raffle_id,)).fetchall()
@@ -575,5 +717,44 @@ def utility_processor():
     # Función para obtener el año actual
     def now_year():
         return datetime.now().year
+    
+    # FUNCIÓN MODIFICADA: Ahora usa get_db() y busca el estado 'Cancelado' si no hay un ganador activo.
+    def get_winner_info(raffle_id, winning_number):
+        # ABRIMOS CONEXIÓN
+        db = get_db()
+        try:
+            # 1. Buscamos un ganador ACTIVO (is_canceled = 0)
+            winner = db.execute(
+                'SELECT customer_name, customer_phone FROM selection WHERE raffle_id = ? AND number = ? AND is_canceled = 0',
+                (raffle_id, winning_number)
+            ).fetchone()
+            
+            if winner:
+                # Retorna la información del ganador activo
+                return dict(winner)
+            
+            # 2. Si no hay ganador activo, buscamos si el número fue CANCELADO (is_canceled = 1)
+            canceled = db.execute(
+                'SELECT customer_name, customer_phone FROM selection WHERE raffle_id = ? AND number = ? AND is_canceled = 1',
+                (raffle_id, winning_number)
+            ).fetchone()
+            
+            if canceled:
+                # Retorna la información de la selección cancelada con un marcador
+                info = dict(canceled)
+                # Usamos una clave especial para que Jinja lo sepa
+                info['status'] = 'CANCELADO'
+                return info
+            
+            # 3. Si no hay registro activo ni cancelado (o fue eliminado)
+            return {'status': 'NO_VENDIDO_O_ELIMINADO'}
+            
+        except Exception as e:
+            # En caso de error de DB, devolvemos un marcador de error
+            print(f"Error al buscar ganador para rifa {raffle_id}, número {winning_number}: {e}")
+            return {'status': 'ERROR_DB'}
+        finally:
+            # CERRAMOS CONEXIÓN
+            db.close()
         
-    return dict(get_image_url=get_image_url, now_year=now_year)
+    return dict(get_image_url=get_image_url, now_year=now_year, get_winner_info=get_winner_info)
