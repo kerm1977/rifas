@@ -56,6 +56,7 @@ nav {
 #nav-menu .nav-item {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
+/* Enlaces y botones deben ser display: block en móvil para ocupar todo el ancho */
 #nav-menu .nav-link, #nav-menu .btn {
     display: block;
     width: 100%;
@@ -75,11 +76,20 @@ nav {
     #nav-menu .nav-item {
         border-top: none;
         margin-left: 1rem; /* ms-lg-3/ms-lg-4 */
+        /* Aseguramos que el LI se comporte como un elemento flex para alinear los nav-links */
+        display: flex; 
     }
+    
+    /* CAMBIO CLAVE: Quitamos 'display: block' de la media query de escritorio. */
+    /* Dejamos que Tailwind maneje el display: flex y la alineación. */
+    /* Solo aplicamos padding, quitando width: 100% y display: block. */
     #nav-menu .nav-link, #nav-menu .btn {
-        display: inline-block;
+        /* Quitamos display: block y width: 100% para que se comporten en línea con flexbox */
+        display: inline-flex; /* Usamos inline-flex para centrar verticalmente el contenido del enlace/botón */
         padding-top: 0.5rem;
         padding-bottom: 0.5rem;
         text-align: center;
+        /* Aseguramos la alineación vertical de los iconos dentro del enlace/botón */
+        align-items: center; 
     }
 }

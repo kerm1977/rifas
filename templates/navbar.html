@@ -1,0 +1,67 @@
+   <!-- Navegación: Pura CSS/JS (sin dependencia del JS de Bootstrap) -->
+    <!-- Se usa bg-gray-800/80 (Tailwind: gris oscuro con 80% de opacidad) para el efecto blur -->
+    <nav class="bg-gray-800/80 sticky top-0 z-50">
+        <div class="container-fluid max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 d-flex justify-content-between align-items-center flex-wrap py-3">
+            
+            <!-- Título del Sistema -->
+            <a class="text-white text-xl font-bold text-decoration-none" href="#">Sistema de Rifas</a>
+            
+            <!-- Botón de Hamburguesa (Visible solo en móvil) -->
+            <button id="nav-toggler" type="button" 
+                    class="d-lg-none p-2 rounded-md hover:bg-gray-700 text-gray-300">
+                <i class="fas fa-bars fa-lg"></i>
+            </button>
+
+            <!-- Contenido Plegable de la Nav -->
+            <!-- CAMBIO CLAVE AQUÍ: Reemplazamos 'd-flex flex-column' por 'flex-row flex-wrap justify-end' para vista móvil. -->
+            <!-- En móvil, si la pantalla es estrecha, los elementos pueden "envolverse" con flex-wrap. -->
+            <!-- En PC, 'lg:flex-row' se aplica de nuevo para asegurar la alineación final. -->
+            <ul id="nav-menu" class="flex flex-row flex-wrap justify-end items-center mt-3 mt-lg-0 list-unstyled p-0 m-0 lg:flex-row lg:items-center">
+                
+                <!-- ENLACE SIEMPRE VISIBLE: Ver Rifas -->
+                <!-- También reducimos el ancho de cada LI en móvil, usando w-auto en lugar de w-full (que es el defecto de display: block) -->
+                <li class="nav-item w-auto">
+                    <a href="{{ url_for('rifas.ver_rifas') }}" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white px-3 rounded-md text-sm font-medium text-decoration-none">Ver Rifas</a>
+                </li>
+                
+                {% if current_user.is_authenticated and current_user.is_superuser() %}
+                <!-- ENLACE SOLO SUPERUSUARIO: Crear Rifa -->
+                <li class="nav-item w-auto">
+                    <a href="{{ url_for('rifas.crear_rifa') }}" class="btn bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-2 rounded-md text-sm font-medium transition text-decoration-none">
+                        <i class="fas fa-plus me-1"></i> Crear Rifa
+                    </a>
+                </li>
+                
+                <!-- Usuario Autenticado: Email y Cerrar Sesión -->
+                <li class="nav-item w-auto">
+                    <span class="nav-link text-red-300 px-3 py-2 text-sm font-medium">({{ current_user.email }})</span>
+                </li>
+                <li class="nav-item w-auto">
+                    <a href="{{ url_for('rifas.logout') }}" class="nav-link text-red-400 hover:bg-gray-700 hover:text-red-200 px-3 rounded-md text-sm font-medium text-decoration-none">
+                        <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
+                    </a>
+                </li>
+                
+                {% elif current_user.is_authenticated %}
+                <!-- Usuario Autenticado (No Superuser): Email y Cerrar Sesión -->
+                <li class="nav-item w-auto">
+                    <span class="nav-link text-red-300 px-3 py-2 text-sm font-medium">({{ current_user.email }})</span>
+                </li>
+                <li class="nav-item w-auto">
+                    <a href="{{ url_for('rifas.logout') }}" class="nav-link text-red-400 hover:bg-gray-700 hover:text-red-200 px-3 rounded-md text-sm font-medium text-decoration-none">
+                        <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
+                    </a>
+                </li>
+                    
+                {% else %}
+                <!-- Usuario No Autenticado: Login y Registro -->
+                <li class="nav-item w-auto">
+                    <a href="{{ url_for('rifas.login') }}" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white px-3 rounded-md text-sm font-medium text-decoration-none">Login</a>
+                </li>
+                <li class="nav-item w-auto">
+                    <a href="{{ url_for('rifas.register') }}" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white px-3 rounded-md text-sm font-medium text-decoration-none">Registro</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
