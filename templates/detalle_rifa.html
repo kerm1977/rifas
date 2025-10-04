@@ -14,6 +14,34 @@
         </button>
     </div>
 
+    <!-- Lógica de Agrupación de Datos en Jinja (OPTIMIZADA) -->
+    {% set grouped_selections = {} %}
+    
+    {# Corrección: Calculamos el total de números ocupados directamente desde la longitud del diccionario #}
+    {% set total_numbers_occupied = sold_numbers | length %} 
+    
+    {% for selection in sold_numbers.values() %}
+        {% set customer_key = selection.customer_name ~ '|' ~ selection.customer_phone %}
+        
+        {# Inicializar la entrada en el diccionario si no existe #}
+        {% if customer_key not in grouped_selections %}
+            {% set new_group = {
+                'customer_name': selection.customer_name,
+                'customer_phone': selection.customer_phone,
+                'created_at': selection.created_at,
+                'numbers': [],
+                'selection_ids': []
+            } %}
+            {% set _ = grouped_selections.update({customer_key: new_group}) %}
+        {% endif %}
+
+        {# Añadir números y IDs #}
+        {% set _ = grouped_selections[customer_key].numbers.append(selection.number) %}
+        {% set _ = grouped_selections[customer_key].selection_ids.append(selection.id) %}
+        
+    {% endfor %}
+    
+    
     <!-- Layout Principal: Formulario (Col-lg-4) y Números (Col-lg-8) -->
     <div class="row g-4">
         
@@ -69,9 +97,16 @@
                 <span class="d-flex align-items-center"><span class="w-4 h-4 rounded-circle bg-pastel-blue me-2 border border-blue-700"></span> Seleccionado</span>
                 <span class="d-flex align-items-center"><span class="w-4 h-4 rounded-circle bg-pastel-red me-2 border border-red-700"></span> Vendido/Ocupado</span>
             </div>
+            
+            <!-- INFORMACIÓN DE NÚMEROS DISPONIBLES (Corregido para reflejar el conteo real) -->
+            <div class="p-3 bg-green-100 border border-green-300 rounded-xl mb-4 shadow-sm text-center">
+                <h4 class="text-lg font-bold text-green-800 mb-0">
+                    Números Disponibles: 
+                    <span class="text-2xl font-extrabold text-green-900">{{ 100 - total_numbers_occupied }}</span>
+                </h4>
+            </div>
 
             <!-- Grilla de Números: Usando Flexbox con tamaño base y envoltura -->
-            <!-- Se eliminaron clases de fondo y borde para que se integre con el fondo de la página -->
             <div class="d-flex flex-wrap gap-2" id="numbers-grid">
                 {% for i in range(100) %}
                     {% set number_str = "%02d"|format(i) %}
@@ -94,28 +129,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Lógica de Agrupación de Datos en Jinja (Corregido: Usando 'set _ = ...' en lugar de 'do' para mutabilidad) -->
-    {% set grouped_selections = {} %}
-    {% for selection in sold_numbers.values() %}
-        {% set customer_key = selection.customer_name ~ '|' ~ selection.customer_phone %}
-        
-        {# Inicializar la entrada en el diccionario si no existe (usando 'set _ = ...' para ejecutar la mutación) #}
-        {% if customer_key not in grouped_selections %}
-            {% set new_group = {
-                'customer_name': selection.customer_name,
-                'customer_phone': selection.customer_phone,
-                'created_at': selection.created_at,
-                'numbers': [],
-                'selection_ids': []
-            } %}
-            {% set _ = grouped_selections.update({customer_key: new_group}) %}
-        {% endif %}
-
-        {# Añadir números y IDs (mutación de lista, se ejecuta con 'set _ =' ) #}
-        {% set _ = grouped_selections[customer_key].numbers.append(selection.number) %}
-        {% set _ = grouped_selections[customer_key].selection_ids.append(selection.id) %}
-    {% endfor %}
     
     <!-- INICIO: Diseño de Tarjetas para Números Vendidos -->
     <div class="mt-5">
@@ -144,6 +157,21 @@
                     
                     <!-- Cuerpo del Card: Números y Botón de Acción -->
                     <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        
+                        <!-- Total de Venta por Usuario (Solo Superusuario) - Implementado según tu solicitud anterior -->
+                        {% if current_user.is_authenticated and current_user.is_superuser() %}
+                            {% set group_total_price = group.numbers | length * rifa.price %}
+                            <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm">
+                                <p class="text-sm font-medium text-indigo-700 mb-1">Total de Venta ({{ group.numbers | length }} números):</p>
+                                <p class="text-2xl font-extrabold text-indigo-800 mb-0">
+                                    ₡{{ "%.2f"|format(group_total_price) }}
+                                </p>
+                                <p class="text-xs text-indigo-600 mt-1 mb-0">
+                                    <i class="fas fa-lock me-1"></i> Visible solo para Superusuario.
+                                </p>
+                            </div>
+                        {% endif %}
+
                         <!-- Números en fila horizontal y wrapping -->
                         <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
                             <span class="text-sm font-medium text-red-800 me-2">Números:</span>
@@ -399,180 +427,4 @@
         </div>
     </div>
 </div>
-
-
-<script>
-    // FIX 1: Se elimina la inicialización explícita de `new bootstrap.Modal(...)` si ya se usa `data-bs-toggle`. 
-    // Esto previene errores de inicialización si el script se ejecuta antes de que bootstrap.bundle.min.js termine de cargar.
-    // Dejamos las variables como referencia para un uso posterior más seguro.
-    const raffleInfoModalElement = document.getElementById('raffle-info-modal-bs');
-    const selectionModalElement = document.getElementById('selection-modal-bs');
-    const editModalElement = document.getElementById('edit-modal-bs');
-    const zoomModalElement = document.getElementById('image-zoom-modal-bs'); 
-    
-    // Almacenamiento de números seleccionados (azul pastel)
-    let selectedNumbers = [];
-    const numbersGrid = document.getElementById('numbers-grid');
-    
-    // Elementos del formulario de escritorio
-    const desktopSelectedNumbersDisplay = document.getElementById('selected_numbers_display');
-    const desktopSelectedNumbersInput = document.getElementById('selected_numbers_input');
-    const desktopSubmitButton = document.getElementById('submit_button');
-    
-    // Elementos del modal de selección (Mobile)
-    const modalSelectedNumbersDisplay = document.getElementById('modal_selected_numbers_display');
-    const modalSelectedNumbersInput = document.getElementById('modal_selected_numbers_input');
-    const modalSubmitButton = document.getElementById('modal_submit_button');
-    
-    // Función de actualización de estilos de botones
-    function updateButtonStyles(button, isSelectedNow, isSold) {
-        // Remover clases de color (siempre mejor remover antes de añadir)
-        button.classList.remove('bg-pastel-blue', 'text-blue-800', 'bg-pastel-green', 'text-green-800');
-        
-        if (isSold) {
-             button.classList.add('bg-pastel-red', 'text-red-800', 'cursor-not-allowed', 'hover:shadow-inner');
-             button.disabled = true;
-        } else if (isSelectedNow) {
-            button.classList.add('bg-pastel-blue', 'text-blue-800'); // Azul Pastel: Seleccionado
-            button.disabled = false;
-        } else {
-            button.classList.add('bg-pastel-green', 'text-green-800', 'hover:bg-green-300', 'hover:shadow-md'); // Verde Pastel: Disponible
-            button.disabled = false;
-        }
-    }
-
-    function updateSelectionState() {
-        // 1. Actualizar el display y los inputs ocultos (Escritorio y Móvil)
-        const isSelected = selectedNumbers.length > 0;
-        
-        selectedNumbers.sort((a, b) => parseInt(a) - parseInt(b));
-        const displayValue = isSelected ? selectedNumbers.join(', ') : 'Ninguno';
-        const inputValue = isSelected ? selectedNumbers.join(',') : '';
-
-        // Botones y estado de envío
-        const submitClasses = ['bg-indigo-600', 'hover:bg-indigo-700', 'focus:ring-indigo-500'];
-        const disabledClasses = ['bg-gray-400', 'hover:bg-gray-500', 'focus:ring-gray-500'];
-        
-        [desktopSubmitButton, modalSubmitButton].forEach(btn => {
-            if (btn) { // Verificar si el botón existe antes de manipularlo
-                btn.disabled = !isSelected;
-                
-                // Toggle de clases de color
-                if (isSelected) {
-                    btn.classList.add(...submitClasses);
-                    btn.classList.remove(...disabledClasses);
-                } else {
-                    btn.classList.add(...disabledClasses);
-                    btn.classList.remove(...submitClasses);
-                }
-            }
-        });
-        
-        // Actualizar displays
-        if (desktopSelectedNumbersDisplay) desktopSelectedNumbersDisplay.textContent = displayValue;
-        if (desktopSelectedNumbersInput) desktopSelectedNumbersInput.value = inputValue;
-        if (modalSelectedNumbersDisplay) modalSelectedNumbersDisplay.textContent = displayValue;
-        if (modalSelectedNumbersInput) modalSelectedNumbersInput.value = inputValue;
-
-        // 2. Aplicar/remover estilos de selección en la grilla
-        numbersGrid.querySelectorAll('.number-button').forEach(button => {
-            const number = button.dataset.number;
-            const isSelectedNow = selectedNumbers.includes(number);
-            const isSold = button.dataset.sold === 'true';
-
-            updateButtonStyles(button, isSelectedNow, isSold);
-        });
-    }
-
-    numbersGrid.addEventListener('click', (e) => {
-        // FIX 2: Simplificación del listener. Si el target tiene la clase 'number-button' o es su hijo directo, funciona.
-        let button = e.target.closest('.number-button');
-        
-        if (!button) return; 
-        
-        const number = button.dataset.number;
-        const isSold = button.dataset.sold === 'true';
-
-        if (isSold) return;
-
-        const index = selectedNumbers.indexOf(number);
-
-        if (index > -1) {
-            // Deseleccionar
-            selectedNumbers.splice(index, 1);
-        } else {
-            // Seleccionar
-            selectedNumbers.push(number);
-        }
-
-        updateSelectionState();
-    });
-    
-    // --- Lógica de Zoom (NEW) ---
-
-    let zoomLevel = 1; 
-
-    function openZoomModal(src) {
-        const imgElement = document.getElementById('zoom-image');
-        imgElement.src = src;
-        imgElement.style.transform = 'scale(1)'; // Reset zoom
-        zoomLevel = 1; // Reset zoom level
-        // El modal se abre automáticamente con data-bs-toggle
-    }
-
-    function handleZoom(direction) {
-        // direction: 1 for zoom in, -1 for zoom out
-        const step = 0.2;
-        const minZoom = 1;
-        const maxZoom = 3;
-
-        zoomLevel += direction * step;
-
-        if (zoomLevel < minZoom) zoomLevel = minZoom;
-        if (zoomLevel > maxZoom) zoomLevel = maxZoom;
-        
-        const imgElement = document.getElementById('zoom-image');
-        imgElement.style.transform = `scale(${zoomLevel})`;
-    }
-
-    // --- Lógica del Modal de Edición/Liberación (BS) ---
-
-    function openEditModal(selectionIds, numbersList, customerName, customerPhone) {
-        // Cargar datos en los inputs ocultos y de solo lectura
-        document.getElementById('modal-selection-ids').value = selectionIds;
-        document.getElementById('modal-number-display').textContent = numbersList;
-        
-        // Cargar datos en los campos de visualización del cliente (FIX: se asegura la carga aquí)
-        document.getElementById('customer_name_display').value = customerName;
-        document.getElementById('customer_phone_display').value = customerPhone;
-        
-        document.getElementById('edit_password').value = ''; // Limpiar campo de contraseña
-        
-        // Mostrar el modal (usando la API de Bootstrap JS)
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(editModalElement) === null) {
-            new bootstrap.Modal(editModalElement).show();
-        } else if (typeof bootstrap !== 'undefined') {
-             bootstrap.Modal.getInstance(editModalElement).show();
-        }
-    }
-    
-    // Función para alternar la visibilidad de la contraseña
-    function togglePasswordVisibility(fieldId) {
-        const field = document.getElementById(fieldId);
-        const icon = document.getElementById(`toggle_${fieldId}_icon`);
-        
-        if (field.type === 'password') {
-            field.type = 'text';
-            icon.classList.remove('fa-eye-slash');
-            icon.classList.add('fa-eye');
-        } else {
-            field.type = 'password';
-            icon.classList.remove('fa-eye');
-            icon.classList.add('fa-eye-slash');
-        }
-    }
-
-    // Asegurar que el estado inicial se renderice
-    document.addEventListener('DOMContentLoaded', updateSelectionState);
-</script>
 {% endblock %}
