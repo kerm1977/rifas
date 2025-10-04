@@ -5,6 +5,7 @@ const raffleInfoModalElement = document.getElementById('raffle-info-modal-bs');
 const selectionModalElement = document.getElementById('selection-modal-bs');
 const editModalElement = document.getElementById('edit-modal-bs');
 const zoomModalElement = document.getElementById('image-zoom-modal-bs'); 
+const cancelConfirmModalElement = document.getElementById('cancel-confirm-modal-bs'); // NEW: Referencia al nuevo modal
 
 // Almacenamiento de números seleccionados (azul pastel)
 let selectedNumbers = [];
@@ -25,9 +26,20 @@ function updateButtonStyles(button, isSelectedNow, isSold) {
     // Remover clases de color (siempre mejor remover antes de añadir)
     button.classList.remove('bg-pastel-blue', 'text-blue-800', 'bg-pastel-green', 'text-green-800');
     
+    // Obtener el estado de cancelación del botón
+    // Nota: La clase 'bg-green-500' es usada para el estado 'Cancelado' por el Superusuario en Jinja
+    const isCanceled = button.classList.contains('bg-green-500') && button.dataset.sold === 'true'; 
+
     if (isSold) {
-         button.classList.add('bg-pastel-red', 'text-red-800', 'cursor-not-allowed', 'hover:shadow-inner');
-         button.disabled = true;
+         // Si está vendido y cancelado (verde sólido)
+         if (isCanceled && !isSelectedNow) {
+            button.classList.add('bg-green-500', 'text-white', 'cursor-not-allowed', 'hover:shadow-inner');
+            button.disabled = true;
+         } else {
+            // Estilo de Vendido (rojo pastel)
+            button.classList.add('bg-pastel-red', 'text-red-800', 'cursor-not-allowed', 'hover:shadow-inner');
+            button.disabled = true;
+         }
     } else if (isSelectedNow) {
         button.classList.add('bg-pastel-blue', 'text-blue-800'); // Azul Pastel: Seleccionado
         button.disabled = false;
@@ -145,10 +157,33 @@ function openEditModal(selectionIds, numbersList, customerName, customerPhone) {
     document.getElementById('edit_password').value = ''; // Limpiar campo de contraseña
     
     // Mostrar el modal (usando la API de Bootstrap JS)
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(editModalElement) === null) {
-        new bootstrap.Modal(editModalElement).show();
-    } else if (typeof bootstrap !== 'undefined') {
-         bootstrap.Modal.getInstance(editModalElement).show();
+    if (typeof bootstrap !== 'undefined' && editModalElement) {
+        const modalInstance = bootstrap.Modal.getInstance(editModalElement) || new bootstrap.Modal(editModalElement);
+        modalInstance.show();
+    }
+}
+
+// --- NUEVA FUNCIÓN: CONFIRMACIÓN DE CANCELACIÓN (USA MODAL DE BOOTSTRAP) ---
+
+function confirmCancellation(selectionIds, customerName, isCanceled) {
+    if (isCanceled === 1) {
+        // Si ya está cancelado, mostramos un mensaje usando un alert simple
+        // NOTA: Reemplazar window.alert con un modal custom si las restricciones son absolutas.
+        alert(`La selección para "${customerName}" ya está marcada como CANCELADA.`); 
+        return;
+    }
+    
+    // 1. Cargar datos en el Modal de Confirmación
+    const numberDisplay = document.getElementById('modal-cancel-customer-name');
+    const idsInput = document.getElementById('modal-cancel-selection-ids');
+    
+    if (numberDisplay) numberDisplay.textContent = customerName;
+    if (idsInput) idsInput.value = selectionIds;
+
+    // 2. Mostrar el modal (usando la API de Bootstrap JS)
+    if (typeof bootstrap !== 'undefined' && cancelConfirmModalElement) {
+        const modalInstance = bootstrap.Modal.getInstance(cancelConfirmModalElement) || new bootstrap.Modal(cancelConfirmModalElement);
+        modalInstance.show();
     }
 }
 

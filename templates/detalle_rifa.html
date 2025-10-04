@@ -25,19 +25,18 @@
         
         {# Inicializar la entrada en el diccionario si no existe #}
         {% if customer_key not in grouped_selections %}
-            {% set new_group = {
-                'customer_name': selection.customer_name,
-                'customer_phone': selection.customer_phone,
-                'created_at': selection.created_at,
-                'numbers': [],
-                'selection_ids': []
-            } %}
+            {# Definición del nuevo grupo en una línea limpia para evitar errores de sintaxis #}
+            {% set new_group = {'customer_name': selection.customer_name, 'customer_phone': selection.customer_phone, 'created_at': selection.created_at, 'numbers': [], 'selection_ids': [], 'is_canceled': selection.is_canceled} %}
             {% set _ = grouped_selections.update({customer_key: new_group}) %}
         {% endif %}
 
         {# Añadir números y IDs #}
         {% set _ = grouped_selections[customer_key].numbers.append(selection.number) %}
         {% set _ = grouped_selections[customer_key].selection_ids.append(selection.id) %}
+        
+        {# Nota: Como todos los números de este grupo tienen el mismo is_canceled (por el agrupamiento), solo usamos el último estado. #}
+        {# Si un solo grupo tuviera números cancelados y no cancelados, habría que refactorizar la DB. Asumimos consistencia por ahora. #}
+        {% set _ = grouped_selections[customer_key].update({'is_canceled': selection.is_canceled}) %}
         
     {% endfor %}
     
@@ -96,6 +95,10 @@
                 <span class="d-flex align-items-center"><span class="w-4 h-4 rounded-circle bg-pastel-green me-2 border border-green-700"></span> Disponible</span>
                 <span class="d-flex align-items-center"><span class="w-4 h-4 rounded-circle bg-pastel-blue me-2 border border-blue-700"></span> Seleccionado</span>
                 <span class="d-flex align-items-center"><span class="w-4 h-4 rounded-circle bg-pastel-red me-2 border border-red-700"></span> Vendido/Ocupado</span>
+                <!-- NUEVO ESTADO: Cancelado -->
+                {% if current_user.is_authenticated and current_user.is_superuser() %}
+                <span class="d-flex align-items-center"><span class="w-4 h-4 rounded-circle bg-green-500 me-2 border border-green-700"></span> <span class="text-green-700">Cancelado (Admin)</span></span>
+                {% endif %}
             </div>
             
             <!-- INFORMACIÓN DE NÚMEROS DISPONIBLES (Corregido para reflejar el conteo real) -->
@@ -110,20 +113,34 @@
             <div class="d-flex flex-wrap gap-2" id="numbers-grid">
                 {% for i in range(100) %}
                     {% set number_str = "%02d"|format(i) %}
-                    {% set is_sold = number_str in sold_numbers %}
+                    {# Si el número existe en sold_numbers y NO está cancelado #}
+                    {% set selection_data = sold_numbers.get(number_str) %}
+                    {% set is_sold = selection_data is not none and selection_data.is_canceled == 0 %}
+                    {# Usaremos una clase simple para mostrar los cancelados si queremos que se vean #}
+                    {% set is_canceled = selection_data is not none and selection_data.is_canceled == 1 %} 
                     
                     <button type="button" 
                         data-number="{{ number_str }}" 
-                        data-sold="{{ 'true' if is_sold else 'false' }}"
+                        data-sold="{{ 'true' if is_sold or is_canceled else 'false' }}"
                         class="number-button text-center py-2 rounded-lg font-bold transition-all duration-150
                                 min-w-[40px] max-w-[10%] flex-shrink-0 flex-grow
+                                
                                 {% if is_sold %}
                                     bg-pastel-red text-red-800 cursor-not-allowed hover:shadow-inner
+                                {% elif is_canceled and current_user.is_superuser() %}
+                                    {# Muestra Cancelado en un color que indique disponibilidad (verde sólido) solo al superusuario #}
+                                    bg-green-500 text-white cursor-not-allowed hover:shadow-inner 
                                 {% else %}
+                                    {# Disponible #}
                                     bg-pastel-green text-green-800 hover:bg-green-300 hover:shadow-md
                                 {% endif %}"
-                        {% if is_sold %}disabled{% endif %}>
+                        {% if is_sold or (is_canceled and current_user.is_superuser()) %}disabled{% endif %}>
+                        
                         {{ number_str }}
+                        
+                        {% if is_canceled and current_user.is_superuser() %}
+                            <i class="fas fa-ban text-sm ms-1 d-none d-sm-inline"></i>
+                        {% endif %}
                     </button>
                 {% endfor %}
             </div>
@@ -136,29 +153,52 @@
         
         {% if grouped_selections %}
         
-        {# ADVERTENCIA PARA DESARROLLADORES: Tengo prohibido tocar este card y su diseño, por petición del usuario. #}
-        
         <!-- Grid de Cards responsivo: 1 columna en móvil, 2 en tablets/escritorio pequeño, 3 en escritorio grande -->
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for key, group in grouped_selections.items() %}
+            
+            {# Clases condicionales para el card #}
+            {% set card_base_class = 'card rounded-xl overflow-hidden h-100' %}
+            {% set header_base_class = 'card-header py-3 px-4' %}
+            {% set text_color = 'text-red-800' %}
+            {% set border_color = 'border-red-300' %}
+            {% set bg_color = 'bg-pastel-red/50' %}
+            
+            {% if group.is_canceled == 1 and current_user.is_superuser() %}
+                {# Card Cancelado (Verde) #}
+                {% set text_color = 'text-green-800' %}
+                {% set border_color = 'border-green-300' %}
+                {% set bg_color = 'bg-pastel-green/50' %}
+                {% set header_bg_color = 'bg-pastel-green' %}
+            {% else %}
+                {# Card Vendido/Ocupado (Rojo) #}
+                {% set header_bg_color = 'bg-pastel-red' %}
+            {% endif %}
+
             <div class="col">
-                <div class="card bg-pastel-red/50 border-red-300 rounded-xl overflow-hidden h-100">
+                <div class="{{ card_base_class }} {{ bg_color }} {{ border_color }}">
                     
                     <!-- Encabezado del Card: Nombre y Teléfono -->
-                    <div class="card-header bg-pastel-red border-red-300 py-3 px-4">
-                        <h5 class="mb-0 text-red-800 font-bold fs-6">
-                            <i class="fas fa-user-circle me-2"></i> {{ group.customer_name }}
-                        </h5>
-                        <p class="mb-0 text-red-700 text-sm">
-                            <i class="fas fa-phone-alt me-2"></i> {{ group.customer_phone }} 
-                            <span class="d-none d-lg-inline-block text-gray-600 ms-3">| Primer registro: {{ group.created_at }}</span>
-                        </p>
+                    <div class="{{ header_base_class }} {{ header_bg_color }} {{ border_color }} d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0 {{ text_color }} font-bold fs-6">
+                                <i class="fas fa-user-circle me-2"></i> {{ group.customer_name }}
+                            </h5>
+                            <p class="mb-0 {{ text_color | replace('800', '700') }} text-sm">
+                                <i class="fas fa-phone-alt me-2"></i> {{ group.customer_phone }} 
+                                <span class="d-none d-lg-inline-block text-gray-600 ms-3">| Primer registro: {{ group.created_at }}</span>
+                            </p>
+                        </div>
+                        
+                        {% if group.is_canceled == 1 and current_user.is_superuser() %}
+                            <span class="badge bg-green-700 text-white font-bold px-3 py-2 rounded-full">CANCELADO</span>
+                        {% endif %}
                     </div>
                     
                     <!-- Cuerpo del Card: Números y Botón de Acción -->
                     <div class="card-body p-4 d-flex flex-column justify-content-between">
                         
-                        <!-- Total de Venta por Usuario (Solo Superusuario) - Implementado según tu solicitud anterior -->
+                        <!-- Total de Venta por Usuario (Solo Superusuario) -->
                         {% if current_user.is_authenticated and current_user.is_superuser() %}
                             {% set group_total_price = group.numbers | length * rifa.price %}
                             <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm">
@@ -174,17 +214,40 @@
 
                         <!-- Números en fila horizontal y wrapping -->
                         <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
-                            <span class="text-sm font-medium text-red-800 me-2">Números:</span>
+                            <span class="text-sm font-medium {{ text_color }}">Números:</span>
                             {% for number in (group.numbers | sort) %}
-                                <span class="bg-red-400 text-white font-extrabold rounded-md px-2 py-1 text-sm">{{ number }}</span>
+                                <span class="font-extrabold rounded-md px-2 py-1 text-sm 
+                                    {% if group.is_canceled == 1 and current_user.is_superuser() %}
+                                        bg-green-400 text-white
+                                    {% else %}
+                                        bg-red-400 text-white
+                                    {% endif %}
+                                ">{{ number }}</span>
                             {% endfor %}
                         </div>
                         
-                        <!-- Botón de Acción -->
-                        <div class="mt-auto pt-3 border-top border-red-200">
+                        <!-- Botones de Acción -->
+                        <div class="mt-auto pt-3 border-top {{ border_color | replace('300', '200') }} d-flex gap-2">
+                            
+                            <!-- Botón Cancelar (Solo Superusuario) -->
+                            {% if current_user.is_authenticated and current_user.is_superuser() %}
+                                <button onclick="confirmCancellation('{{ group.selection_ids | join(',') }}', '{{ group.customer_name }}', {{ group.is_canceled }})"
+                                    class="btn btn-sm w-50 inline-flex items-center justify-content-center font-medium rounded-xl transition 
+                                    {% if group.is_canceled == 1 %}
+                                        btn-success disabled bg-green-500 text-white border-green-700 cursor-not-allowed
+                                    {% else %}
+                                        btn-outline-success hover:bg-green-100
+                                    {% endif %}
+                                ">
+                                    <i class="fas fa-ban me-1"></i> 
+                                    {{ 'CANCELADO' if group.is_canceled == 1 else 'Marcar Cancelado' }}
+                                </button>
+                            {% endif %}
+                            
+                            <!-- Botón Editar / Liberar -->
                             <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
-                                class="btn btn-sm btn-outline-danger w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100">
-                                <i class="fas fa-edit me-1"></i> Editar / Liberar Números
+                                class="btn btn-sm btn-outline-danger {% if current_user.is_authenticated and current_user.is_superuser() %}w-50{% else %}w-100{% endif %} inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100">
+                                <i class="fas fa-edit me-1"></i> Editar / Liberar
                             </button>
                         </div>
                     </div>
@@ -427,4 +490,62 @@
         </div>
     </div>
 </div>
+
+<!-- NEW MODAL: Cancel Confirmation Modal (Bootstrap Modal) -->
+<div class="modal fade" id="cancel-confirm-modal-bs" tabindex="-1" aria-labelledby="cancelConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-xl">
+            
+            <div class="modal-header border-bottom-0 pt-4 bg-red-50 rounded-top-xl">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 d-flex align-items-center justify-content-center h-10 w-10 rounded-circle bg-red-100 me-3">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h3 class="modal-title fs-5 font-bold text-red-700" id="cancelConfirmModalLabel">
+                            Confirmar Cancelación
+                        </h3>
+                        <p class="text-sm text-gray-500">
+                            Esta acción es **irreversible** y solo marca la selección como cancelada (Verde).
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- El formulario se posteará para la acción de cancelación -->
+            <form method="POST" action="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}">
+                <div class="modal-body pt-0">
+                    <input type="hidden" name="action" value="cancel_selection"> 
+                    <!-- Este input se llena con JS: selectionIds -->
+                    <input type="hidden" name="selection_ids" id="modal-cancel-selection-ids">
+                    
+                    <div class="p-4 bg-gray-50 rounded-lg mb-3 border border-red-200">
+                        <p class="text-base text-gray-700 mb-2">
+                            ¿Confirma que el cliente 
+                            <span id="modal-cancel-customer-name" class="font-extrabold text-red-800"></span> 
+                            ha **CANCELADO** su selección?
+                        </p>
+                        <p class="text-sm text-red-600 font-medium">
+                            Los números se marcarán como CANCELADOS en el sistema y aparecerán en **color verde sólido** en la lista de vendidos. No se liberan a la venta.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary rounded-xl font-medium" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <!-- Botón de Confirmación para enviar la acción POST -->
+                    <button type="submit" 
+                            class="btn btn-success rounded-xl text-base font-medium transition hover:bg-green-700">
+                        <i class="fas fa-check-circle me-2"></i> Confirmar Cancelación
+                    </button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+</div>
+
 {% endblock %}

@@ -105,6 +105,7 @@ def init_db():
     """)
 
     # 3. Crear tabla de Selecciones (Números vendidos)
+    # MODIFICACIÓN: Agregamos la columna is_canceled
     db.execute("""
         CREATE TABLE IF NOT EXISTS selection (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,11 +115,20 @@ def init_db():
             customer_phone TEXT NOT NULL,
             selection_password_hash TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            is_canceled BOOLEAN DEFAULT 0, -- NUEVO: 0 = No cancelado, 1 = Cancelado
             FOREIGN KEY (raffle_id) REFERENCES raffle(id),
             UNIQUE (raffle_id, number)
         );
     """)
     db.commit()
+
+    # Si la tabla ya existe y la columna falta, la agregamos (MIGRACIÓN simple)
+    try:
+        db.execute("ALTER TABLE selection ADD COLUMN is_canceled BOOLEAN DEFAULT 0")
+        db.commit()
+    except sqlite3.OperationalError:
+        # Columna ya existe o error no relacionado
+        pass
 
     # 4. Crear Superusuario permanente
     superuser_email = 'kenth1977@gmail.com'
@@ -418,7 +428,8 @@ def detalle_rifa(raffle_id):
     rifa_dict = dict(rifa)
 
     # Obtener todas las selecciones (vendidas/reservadas)
-    selections = db.execute('SELECT * FROM selection WHERE raffle_id = ?', (raffle_id,)).fetchall()
+    # MODIFICACIÓN: Incluimos la columna 'is_canceled' en el SELECT
+    selections = db.execute('SELECT id, raffle_id, number, customer_name, customer_phone, selection_password_hash, created_at, is_canceled FROM selection WHERE raffle_id = ?', (raffle_id,)).fetchall()
     
     # Mapeo de números seleccionados
     sold_numbers = {s['number']: dict(s) for s in selections}
@@ -426,7 +437,12 @@ def detalle_rifa(raffle_id):
     # 1. Lógica para manejar la selección (AJAX en el front-end)
     if request.method == 'POST':
         action = request.form.get('action')
-
+        
+        # Las acciones que requieren IDs de selección usan esta lógica común
+        selection_ids_str = request.form.get('selection_ids') 
+        password_check = request.form.get('edit_password')
+        
+        # --- Lógica de Agregar Selección ---
         if action == 'add_selection':
             name = request.form.get('customer_name')
             phone = request.form.get('customer_phone')
@@ -447,10 +463,11 @@ def detalle_rifa(raffle_id):
                     # Verificar si ya está vendido
                     existing = db.execute('SELECT * FROM selection WHERE raffle_id = ? AND number = ?', (raffle_id, number)).fetchone()
                     if existing is None:
+                        # Asegurar que insertamos is_canceled = 0 por defecto
                         db.execute("""
-                            INSERT INTO selection (raffle_id, number, customer_name, customer_phone, selection_password_hash)
-                            VALUES (?, ?, ?, ?, ?)
-                        """, (raffle_id, number, name, phone, password_hash))
+                            INSERT INTO selection (raffle_id, number, customer_name, customer_phone, selection_password_hash, is_canceled)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        """, (raffle_id, number, name, phone, password_hash, 0))
                         newly_selected.append(number)
                 
                 db.commit()
@@ -466,30 +483,24 @@ def detalle_rifa(raffle_id):
                 flash(f'Error al guardar la selección: {e}', 'danger')
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
-        # 2. Lógica para editar/eliminar (desde el modal)
-        elif action in ['edit_selection', 'delete_selection']:
-            # El frontend pasa una cadena de IDs separados por coma (e.g., "1,2,3")
-            selection_ids_str = request.form.get('selection_ids') 
-            password_check = request.form.get('edit_password')
+        # --- Lógica para Editar/Eliminar/Cancelar ---
+        elif action in ['edit_selection', 'delete_selection', 'cancel_selection']:
             
             if not selection_ids_str:
                 flash('Error: No se proporcionaron IDs de selección.', 'danger')
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
-            # Convertir la cadena de IDs a una tupla para la consulta SQL (necesario para el operador IN)
             selection_ids = tuple(selection_ids_str.split(','))
             
-            # Obtener todas las selecciones para verificar la contraseña (solo necesitamos la primera hash)
-            # Usamos el primer ID para encontrar una de las selecciones y su hash de contraseña.
+            # Obtener el hash de la contraseña del primer ID para verificar
             first_selection_id = selection_ids[0]
-            selection_to_check = db.execute('SELECT selection_password_hash, number FROM selection WHERE id = ?', (first_selection_id,)).fetchone()
+            selection_to_check = db.execute('SELECT selection_password_hash FROM selection WHERE id = ?', (first_selection_id,)).fetchone()
             
             if not selection_to_check:
-                # El error que viste: "Selección no encontrada."
                 flash('Error: Selección no encontrada o IDs inválidos.', 'danger')
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
-            # --- VERIFICACIÓN DE CONTRASEÑA ---
+            # --- VERIFICACIÓN DE PERMISOS/CONTRASEÑA ---
             password_ok = False
             
             # Regla de Superusuario: Si es Superusuario, la contraseña es opcional
@@ -505,28 +516,31 @@ def detalle_rifa(raffle_id):
                 flash('Contraseña de edición incorrecta o faltante.', 'danger')
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
             
-            # --- Proceso de Edición/Eliminación ---
+            # --- Proceso de Acciones ---
+            placeholders = ','.join('?' * len(selection_ids))
             
-            # Usamos el operador IN para eliminar múltiples registros
             if action == 'delete_selection':
-                # Crear los marcadores de posición '?' para la cláusula IN: (?, ?, ?)
-                placeholders = ','.join('?' * len(selection_ids))
-                
                 db.execute(f'DELETE FROM selection WHERE id IN ({placeholders})', selection_ids)
                 db.commit()
-                db.close()
-
-                # Obtener los números para el mensaje (aunque ya los tenemos en el frontend, mejor ser precisos)
-                numbers_removed = [str(s['number']) for s in selections if str(s['id']) in selection_ids]
-
-                flash(f'Los números {", ".join(numbers_removed)} han sido liberados.', 'success')
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+                flash(f'Los números han sido liberados y eliminados.', 'success')
+            
+            elif action == 'cancel_selection':
+                # MODIFICACIÓN: Solo superusuarios pueden cancelar, ya revisado arriba.
+                if not current_user.is_superuser():
+                    flash('Acción denegada. Solo superusuarios pueden cancelar selecciones.', 'danger')
+                    db.close()
+                    return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+                    
+                # Marcamos como cancelado (1)
+                db.execute(f'UPDATE selection SET is_canceled = 1 WHERE id IN ({placeholders})', selection_ids)
+                db.commit()
+                flash('La selección ha sido marcada como CANCELADA. El card se ha puesto verde.', 'success')
             
             elif action == 'edit_selection':
-                # La edición de datos del cliente requiere un formulario más complejo. 
-                # Por ahora, solo confirmamos la acción. Si quieres editar, deberás agregar los campos de nombre/teléfono al modal de edición.
                 flash('Funcionalidad de Edición de Cliente no implementada aún.', 'info')
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+            
+            db.close()
+            return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
 
     db.close()
