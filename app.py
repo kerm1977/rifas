@@ -11,12 +11,13 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'un-secreto-muy-seguro-CR129x7848n')
     
     # Configuración de la base de datos y uploads
+    # NOTA: Para PythonAnywhere, asegúrate de que 'rifas.sqlite' se cree en el directorio raíz del proyecto (/home/kenth1977/rifas/)
     app.config['DATABASE'] = os.path.join(app.root_path, 'rifas.sqlite')
     app.config['UPLOAD_FOLDER'] = Path(app.root_path) / UPLOAD_FOLDER
     
     # Crear el directorio de subidas si no existe
     if not app.config['UPLOAD_FOLDER'].exists():
-        app.config['UPLOAD_FOLDER'].mkdir(parents=True)
+        app.config['UPLOAD_FOLDER'].mkdir(parents=True) 
 
     # Inicializar la DB y crear el superusuario
     with app.app_context():
@@ -35,8 +36,12 @@ def create_app():
 
     return app
 
+# CAMBIO CLAVE PARA PYTHONANYWHERE:
+# Llamar a create_app() y asignar la instancia a 'app' para que el archivo WSGI
+# pueda importarla con la línea: from app import app as application
+app = create_app()
+
 if __name__ == '__main__':
-    # Usar variables de entorno para puerto y modo, o valores por defecto
+    # Usar la variable 'app' que ya creamos arriba
     port = int(os.environ.get('PORT', 8080))
-    app = create_app()
     app.run(debug=True, host='0.0.0.0', port=port)
