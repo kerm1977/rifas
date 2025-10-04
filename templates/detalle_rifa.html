@@ -127,18 +127,18 @@
                                 
                                 {% if is_sold %}
                                     bg-pastel-red text-red-800 cursor-not-allowed hover:shadow-inner
-                                {% elif is_canceled and current_user.is_superuser() %}
+                                {% elif is_canceled and current_user.is_authenticated and current_user.is_superuser() %}
                                     {# Muestra Cancelado en un color que indique disponibilidad (verde sólido) solo al superusuario #}
                                     bg-green-500 text-white cursor-not-allowed hover:shadow-inner 
                                 {% else %}
                                     {# Disponible #}
                                     bg-pastel-green text-green-800 hover:bg-green-300 hover:shadow-md
                                 {% endif %}"
-                        {% if is_sold or (is_canceled and current_user.is_superuser()) %}disabled{% endif %}>
+                        {% if is_sold or (is_canceled and current_user.is_authenticated and current_user.is_superuser()) %}disabled{% endif %}>
                         
                         {{ number_str }}
                         
-                        {% if is_canceled and current_user.is_superuser() %}
+                        {% if is_canceled and current_user.is_authenticated and current_user.is_superuser() %}
                             <i class="fas fa-ban text-sm ms-1 d-none d-sm-inline"></i>
                         {% endif %}
                     </button>
@@ -157,6 +157,11 @@
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
             {% for key, group in grouped_selections.items() %}
             
+            {# Variables para el Card #}
+            {% set group_total_price = group.numbers | length * rifa.price %}
+            {% set formatted_price = "₡%s"|format("%.2f"|format(group_total_price) | replace('.', ',')) %}
+            {% set numbers_list = (group.numbers | sort) | join(', ') %}
+            
             {# Clases condicionales para el card #}
             {% set card_base_class = 'card rounded-xl overflow-hidden h-100' %}
             {% set header_base_class = 'card-header py-3 px-4' %}
@@ -164,7 +169,7 @@
             {% set border_color = 'border-red-300' %}
             {% set bg_color = 'bg-pastel-red/50' %}
             
-            {% if group.is_canceled == 1 and current_user.is_superuser() %}
+            {% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
                 {# Card Cancelado (Verde) #}
                 {% set text_color = 'text-green-800' %}
                 {% set border_color = 'border-green-300' %}
@@ -190,7 +195,7 @@
                             </p>
                         </div>
                         
-                        {% if group.is_canceled == 1 and current_user.is_superuser() %}
+                        {% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
                             <span class="badge bg-green-700 text-white font-bold px-3 py-2 rounded-full">CANCELADO</span>
                         {% endif %}
                     </div>
@@ -200,11 +205,10 @@
                         
                         <!-- Total de Venta por Usuario (Solo Superusuario) -->
                         {% if current_user.is_authenticated and current_user.is_superuser() %}
-                            {% set group_total_price = group.numbers | length * rifa.price %}
                             <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm">
                                 <p class="text-sm font-medium text-indigo-700 mb-1">Total de Venta ({{ group.numbers | length }} números):</p>
                                 <p class="text-2xl font-extrabold text-indigo-800 mb-0">
-                                    ₡{{ "%.2f"|format(group_total_price) }}
+                                    {{ formatted_price }}
                                 </p>
                                 <p class="text-xs text-indigo-600 mt-1 mb-0">
                                     <i class="fas fa-lock me-1"></i> Visible solo para Superusuario.
@@ -217,7 +221,7 @@
                             <span class="text-sm font-medium {{ text_color }}">Números:</span>
                             {% for number in (group.numbers | sort) %}
                                 <span class="font-extrabold rounded-md px-2 py-1 text-sm 
-                                    {% if group.is_canceled == 1 and current_user.is_superuser() %}
+                                    {% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
                                         bg-green-400 text-white
                                     {% else %}
                                         bg-red-400 text-white
@@ -226,13 +230,16 @@
                             {% endfor %}
                         </div>
                         
-                        <!-- Botones de Acción -->
-                        <div class="mt-auto pt-3 border-top {{ border_color | replace('300', '200') }} d-flex gap-2">
+                        <!-- Botones de Acción: Cancelar y Editar/Liberar -->
+                        <div class="mt-auto pt-3 border-top {{ border_color | replace('300', '200') }} d-flex flex-wrap gap-2">
                             
                             <!-- Botón Cancelar (Solo Superusuario) -->
-                            {% if current_user.is_authenticated and current_user.is_superuser() %}
+                            {% set show_cancel = current_user.is_authenticated and current_user.is_superuser() %}
+                            
+                            {% if show_cancel %}
+                                {# Botón Cancelar - Ocupa la mitad del espacio disponible #}
                                 <button onclick="confirmCancellation('{{ group.selection_ids | join(',') }}', '{{ group.customer_name }}', {{ group.is_canceled }})"
-                                    class="btn btn-sm w-50 inline-flex items-center justify-content-center font-medium rounded-xl transition 
+                                    class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition 
                                     {% if group.is_canceled == 1 %}
                                         btn-success disabled bg-green-500 text-white border-green-700 cursor-not-allowed
                                     {% else %}
@@ -242,14 +249,39 @@
                                     <i class="fas fa-ban me-1"></i> 
                                     {{ 'CANCELADO' if group.is_canceled == 1 else 'Marcar Cancelado' }}
                                 </button>
+
+                                {# Botón Editar / Liberar - Ocupa la otra mitad del espacio disponible #}
+                                <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
+                                    class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
+                                    <i class="fas fa-edit me-1"></i> Editar / Liberar
+                                </button>
+                            {% else %}
+                                {# Si no es superusuario, solo muestra Editar/Liberar (ocupa 100%) #}
+                                <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
+                                    class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
+                                    <i class="fas fa-edit me-1"></i> Editar / Liberar
+                                </button>
                             {% endif %}
-                            
-                            <!-- Botón Editar / Liberar -->
-                            <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
-                                class="btn btn-sm btn-outline-danger {% if current_user.is_authenticated and current_user.is_superuser() %}w-50{% else %}w-100{% endif %} inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100">
-                                <i class="fas fa-edit me-1"></i> Editar / Liberar
-                            </button>
                         </div>
+                        
+                        <!-- NUEVO BOTÓN: WhatsApp (MEJORADO - Visible solo para Superusuario) -->
+                        {% set first_digit = group.customer_phone | default('0') | string | slice(0, 1) %}
+                        
+                        {# SIMPLIFICACIÓN: Eliminamos la verificación de ['6', '7', '8'] para asegurar que se muestre #}
+                        {# Solo revisamos que el teléfono tenga 8 dígitos (patrón CR) y que el usuario sea Superusuario #}
+                        {% set show_wa = current_user.is_authenticated and current_user.is_superuser() and group.customer_phone | length == 8 %} 
+
+                        {% if show_wa %}
+                            {# Mensaje actualizado para incluir el total a pagar #}
+                            {% set wa_text = "¡Hola *%s*! Te confirmo tu selección de número(s) para la rifa *%s* (#%s). Tus números son: *%s*.\n\nEl total a pagar es de: *%s*.\n\n_Para confirmar su compra, por favor enviar el comprobante de pago._"|format(group.customer_name, rifa.name, rifa.raffle_number, numbers_list, formatted_price) %}
+                            
+                            <a href="https://wa.me/506{{ group.customer_phone }}?text={{ wa_text | urlencode }}"
+                               target="_blank"
+                               class="btn btn-sm w-100 mt-2 inline-flex items-center justify-content-center font-medium rounded-xl transition bg-green-600 text-white hover:bg-green-700"
+                               title="Enviar mensaje de WhatsApp a {{ group.customer_name }} con números y total">
+                                <i class="fab fa-whatsapp me-1"></i> Enviar Info por WhatsApp
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
