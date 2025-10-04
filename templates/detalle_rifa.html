@@ -1,0 +1,578 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid max-w-7xl mx-auto p-4 md:p-8">
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-4 text-center">{{ rifa.name }} (Rifa #{{ rifa.raffle_number }})</h1>
+    
+    <!-- Botón para Abrir Modal de Info (Visible siempre) -->
+    <div class="d-flex justify-content-center mb-4">
+        <button id="open-info-modal-button" 
+                data-bs-toggle="modal" data-bs-target="#raffle-info-modal-bs"
+                class="btn inline-flex items-center px-6 py-3 border border-transparent text-base font-bold rounded-xl 
+                       text-white bg-indigo-600 hover:bg-indigo-700 transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <i class="fas fa-info-circle me-2"></i> Ver Información de la Rifa
+        </button>
+    </div>
+
+    <!-- Layout Principal: Formulario (Col-lg-4) y Números (Col-lg-8) -->
+    <div class="row g-4">
+        
+        <!-- Columna de Formulario (Desktop - Col-lg-4) -->
+        <div class="col-12 col-lg-4">
+            <!-- Contenedor del Formulario de Selección (Visible en LG y superior) -->
+            <div id="selection-form-container" class="h-fit sticky top-4 
+                d-none d-lg-block p-4 bg-white rounded-xl border border-indigo-100">
+                <h2 class="text-2xl font-bold text-indigo-700 mb-3 border-bottom pb-2">Seleccionar Números</h2>
+                <form method="POST" action="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}" id="selection-form">
+                    <input type="hidden" name="action" value="add_selection">
+                    <input type="hidden" name="selected_numbers" id="selected_numbers_input" value="">
+
+                    <div class="mb-3 p-3 bg-pastel-blue rounded-xl border border-blue-300">
+                        <label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar:</label>
+                        <span id="selected_numbers_display" class="d-block text-lg font-extrabold text-blue-800">Ninguno</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label for="customer_name" class="form-label text-sm font-medium text-gray-700">Nombre:</label>
+                            <input type="text" name="customer_name" id="customer_name" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+                        </div>
+                        <div>
+                            <label for="customer_phone" class="form-label text-sm font-medium text-gray-700">Teléfono (8 dígitos):</label>
+                            <input type="tel" name="customer_phone" id="customer_phone" pattern="[0-9]{8}" maxlength="8" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+                        </div>
+                        <div>
+                            <label for="selection_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
+                            <div class="input-group mt-1">
+                                <input type="password" name="selection_password" id="selection_password" required minlength="4" class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+                                <button type="button" onclick="togglePasswordVisibility('selection_password')" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
+                                        style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
+                                    <i class="fas fa-eye-slash" id="toggle_selection_password_icon"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Necesaria para editar/eliminar la selección más tarde.</p>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="submit_button" disabled class="mt-3 w-full btn text-lg font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Comprar Números Seleccionados
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Columna de Números (Col-lg-8) -->
+        <div class="col-12 col-lg-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-3">Disponibilidad (00 a 99)</h2>
+            <div class="mb-4 d-flex justify-content-center space-x-4 text-sm font-medium">
+                <span class="d-flex align-items-center"><span class="w-4 h-4 rounded-circle bg-pastel-green me-2 border border-green-700"></span> Disponible</span>
+                <span class="d-flex align-items-center"><span class="w-4 h-4 rounded-circle bg-pastel-blue me-2 border border-blue-700"></span> Seleccionado</span>
+                <span class="d-flex align-items-center"><span class="w-4 h-4 rounded-circle bg-pastel-red me-2 border border-red-700"></span> Vendido/Ocupado</span>
+            </div>
+
+            <!-- Grilla de Números: Usando Flexbox con tamaño base y envoltura -->
+            <!-- Se eliminaron clases de fondo y borde para que se integre con el fondo de la página -->
+            <div class="d-flex flex-wrap gap-2" id="numbers-grid">
+                {% for i in range(100) %}
+                    {% set number_str = "%02d"|format(i) %}
+                    {% set is_sold = number_str in sold_numbers %}
+                    
+                    <button type="button" 
+                        data-number="{{ number_str }}" 
+                        data-sold="{{ 'true' if is_sold else 'false' }}"
+                        class="number-button text-center py-2 rounded-lg font-bold transition-all duration-150
+                                min-w-[40px] max-w-[10%] flex-shrink-0 flex-grow
+                                {% if is_sold %}
+                                    bg-pastel-red text-red-800 cursor-not-allowed hover:shadow-inner
+                                {% else %}
+                                    bg-pastel-green text-green-800 hover:bg-green-300 hover:shadow-md
+                                {% endif %}"
+                        {% if is_sold %}disabled{% endif %}>
+                        {{ number_str }}
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lógica de Agrupación de Datos en Jinja (Corregido: Usando 'set _ = ...' en lugar de 'do' para mutabilidad) -->
+    {% set grouped_selections = {} %}
+    {% for selection in sold_numbers.values() %}
+        {% set customer_key = selection.customer_name ~ '|' ~ selection.customer_phone %}
+        
+        {# Inicializar la entrada en el diccionario si no existe (usando 'set _ = ...' para ejecutar la mutación) #}
+        {% if customer_key not in grouped_selections %}
+            {% set new_group = {
+                'customer_name': selection.customer_name,
+                'customer_phone': selection.customer_phone,
+                'created_at': selection.created_at,
+                'numbers': [],
+                'selection_ids': []
+            } %}
+            {% set _ = grouped_selections.update({customer_key: new_group}) %}
+        {% endif %}
+
+        {# Añadir números y IDs (mutación de lista, se ejecuta con 'set _ =' ) #}
+        {% set _ = grouped_selections[customer_key].numbers.append(selection.number) %}
+        {% set _ = grouped_selections[customer_key].selection_ids.append(selection.id) %}
+    {% endfor %}
+    
+    <!-- INICIO: Diseño de Tarjetas para Números Vendidos -->
+    <div class="mt-5">
+        <h2 class="text-3xl font-bold text-gray-800 mb-3 border-bottom pb-2">Números Vendidos y Ocupados</h2>
+        
+        {% if grouped_selections %}
+        
+        {# ADVERTENCIA PARA DESARROLLADORES: Tengo prohibido tocar este card y su diseño, por petición del usuario. #}
+        
+        <!-- Grid de Cards responsivo: 1 columna en móvil, 2 en tablets/escritorio pequeño, 3 en escritorio grande -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for key, group in grouped_selections.items() %}
+            <div class="col">
+                <div class="card bg-pastel-red/50 border-red-300 rounded-xl overflow-hidden h-100">
+                    
+                    <!-- Encabezado del Card: Nombre y Teléfono -->
+                    <div class="card-header bg-pastel-red border-red-300 py-3 px-4">
+                        <h5 class="mb-0 text-red-800 font-bold fs-6">
+                            <i class="fas fa-user-circle me-2"></i> {{ group.customer_name }}
+                        </h5>
+                        <p class="mb-0 text-red-700 text-sm">
+                            <i class="fas fa-phone-alt me-2"></i> {{ group.customer_phone }} 
+                            <span class="d-none d-lg-inline-block text-gray-600 ms-3">| Primer registro: {{ group.created_at }}</span>
+                        </p>
+                    </div>
+                    
+                    <!-- Cuerpo del Card: Números y Botón de Acción -->
+                    <div class="card-body p-4 d-flex flex-column justify-content-between">
+                        <!-- Números en fila horizontal y wrapping -->
+                        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+                            <span class="text-sm font-medium text-red-800 me-2">Números:</span>
+                            {% for number in (group.numbers | sort) %}
+                                <span class="bg-red-400 text-white font-extrabold rounded-md px-2 py-1 text-sm">{{ number }}</span>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Botón de Acción -->
+                        <div class="mt-auto pt-3 border-top border-red-200">
+                            <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
+                                class="btn btn-sm btn-outline-danger w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100">
+                                <i class="fas fa-edit me-1"></i> Editar / Liberar Números
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center p-5 bg-gray-100 rounded-xl">
+            <p class="text-xl text-gray-600 font-medium">¡Aún no hay números vendidos! Sé el primero.</p>
+        </div>
+        {% endif %}
+    </div>
+    <!-- FIN: Diseño de Tarjetas para Números Vendidos -->
+</div>
+
+
+<!-- Botón Flotante para Móvil (d-lg-none) -->
+<button id="floating-select-button" 
+        data-bs-toggle="modal" data-bs-target="#selection-modal-bs" 
+        class="d-lg-none fixed bottom-3 end-3 z-40 
+               py-3 px-6 bg-indigo-600 text-white font-bold 
+               rounded-full hover:bg-indigo-700 transition transform hover:scale-105">
+    <i class="fas fa-hand-pointer me-2"></i> Seleccionar Números
+</button>
+
+
+<!-- MODAL DE INFORMACIÓN DE RIFA (Bootstrap Modal) -->
+<div class="modal fade" id="raffle-info-modal-bs" tabindex="-1" aria-labelledby="raffleInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-xl">
+            <div class="modal-header border-bottom-0">
+                <h2 class="modal-title text-2xl font-bold text-gray-800" id="raffleInfoModalLabel">Detalles de la Rifa</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-6">
+                        <!-- Imagen ahora es clickable para abrir el modal de zoom -->
+                        <div 
+                            class="cursor-pointer" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#image-zoom-modal-bs"
+                            onclick="openZoomModal('{{ url_for('static', filename='uploads/' + rifa.image_filename) }}')"
+                        >
+                            <img src="{{ url_for('static', filename='uploads/' + rifa.image_filename) }}" 
+                                alt="Imagen del Premio" 
+                                class="rounded-lg object-cover w-full max-w-full h-48 md:h-64 mb-4 border border-gray-200"
+                                onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?text=Sin+Imagen';"
+                            >
+                        </div>
+                        <div class="space-y-3">
+                            <p class="text-xl font-semibold text-indigo-700">Premio: <span class="text-2xl font-bold text-indigo-900">{{ rifa.prize }}</span></p>
+                            <p class="text-gray-600"><i class="fas fa-calendar-alt me-2 text-indigo-500"></i> Fecha del Sorteo: <span class="font-medium text-gray-800">{{ rifa.raffle_date }}</span></p>
+                            {% if rifa.raffle_time %}
+                                <p class="text-gray-600"><i class="fas fa-clock me-2 text-indigo-500"></i> Hora Estimada: <span class="font-medium text-gray-800">{{ rifa.raffle_time }}</span></p>
+                            {% endif %}
+                            <p class="text-gray-600"><i class="fas fa-tag me-2 text-indigo-500"></i> Precio por Número: <span class="text-xl font-extrabold text-green-600">₡{{ "%.2f"|format(rifa.price) }}</span></p>
+                            
+                            {% if current_user.is_authenticated and current_user.is_superuser() %}
+                                <div class="mt-3">
+                                    <a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}" class="btn btn-warning text-white font-medium rounded-xl hover:bg-yellow-600 transition">
+                                        <i class="fas fa-edit me-2"></i> Editar Rifa (Admin)
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-12 col-lg-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-3 border-bottom pb-1">Descripción:</h3>
+                        <p class="text-gray-700 whitespace-pre-wrap">{{ rifa.detail }}</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL DE SELECCIÓN DE NÚMEROS (Mobile - Bootstrap Modal) -->
+<div class="modal fade" id="selection-modal-bs" tabindex="-1" aria-labelledby="selectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-xl">
+            <div class="modal-header border-bottom-0">
+                <h2 class="modal-title text-2xl font-bold text-indigo-700" id="selectionModalLabel">Seleccionar Números</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4">
+                <form method="POST" action="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}" id="selection-modal-form">
+                    <input type="hidden" name="action" value="add_selection">
+                    <input type="hidden" name="selected_numbers" id="modal_selected_numbers_input" value="">
+
+                    <div class="mb-3 p-3 bg-pastel-blue rounded-xl border border-blue-300">
+                        <label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar:</label>
+                        <span id="modal_selected_numbers_display" class="d-block text-lg font-extrabold text-blue-800">Ninguno</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label for="modal_customer_name" class="form-label text-sm font-medium text-gray-700">Nombre:</label>
+                            <input type="text" name="customer_name" id="modal_customer_name" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+                        </div>
+                        <div>
+                            <label for="modal_customer_phone" class="form-label text-sm font-medium text-gray-700">Teléfono (8 dígitos):</label>
+                            <input type="tel" name="customer_phone" id="modal_customer_phone" pattern="[0-9]{8}" maxlength="8" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+                        </div>
+                        <div>
+                            <label for="modal_selection_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
+                            <div class="input-group mt-1">
+                                <input type="password" name="selection_password" id="modal_selection_password" required minlength="4" class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+                                <button type="button" onclick="togglePasswordVisibility('modal_selection_password')" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
+                                        style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
+                                    <i class="fas fa-eye-slash" id="toggle_modal_selection_password_icon"></i>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Necesaria para editar/eliminar la selección más tarde.</p>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="modal_submit_button" disabled class="mt-3 w-full btn text-lg font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Comprar Números Seleccionados
+                    </button>
+                </form>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+
+<!-- MODAL DE EDICIÓN/LIBERACIÓN (Bootstrap Modal) -->
+<div class="modal fade" id="edit-modal-bs" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-xl">
+            
+            <div class="modal-header border-bottom-0 pt-4">
+                <div class="d-flex align-items-start">
+                    <div class="flex-shrink-0 d-flex align-items-center justify-content-center h-10 w-10 rounded-circle bg-indigo-100 me-3">
+                        <i class="fas fa-unlock-alt text-indigo-600"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h3 class="modal-title fs-5 font-medium text-gray-900" id="editModalLabel">
+                            Detalles de la Selección <span id="modal-number-display" class="font-extrabold text-indigo-700"></span>
+                        </h3>
+                        <p class="text-sm text-gray-500">
+                            Verifica la información del cliente antes de proceder a editar o liberar.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form method="POST" action="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}">
+                <div class="modal-body pt-0">
+                    <!-- Se utiliza 'view_selection' como acción para diferenciar, aunque el backend solo implemente delete/edit -->
+                    <input type="hidden" name="action" id="modal-action" value="delete_selection"> 
+                    <input type="hidden" name="selection_ids" id="modal-selection-ids">
+                    
+                    <!-- Información del Cliente (READ-ONLY) -->
+                    <div class="p-3 bg-gray-50 rounded-lg mb-3">
+                        <h6 class="text-sm font-bold text-gray-700 mb-2 border-bottom pb-1">Datos del Cliente:</h6>
+                        <div class="mb-2">
+                            <label class="form-label text-xs font-medium text-gray-600 mb-0">Nombre:</label>
+                            <input type="text" id="customer_name_display" readonly class="form-control form-control-sm bg-white font-semibold border-0">
+                        </div>
+                        <div>
+                            <label class="form-label text-xs font-medium text-gray-600 mb-0">Teléfono:</label>
+                            <input type="text" id="customer_phone_display" readonly class="form-control form-control-sm bg-white font-semibold border-0">
+                        </div>
+                    </div>
+
+                    <!-- Contraseña para ACCIONES (Editar o Liberar) -->
+                    <div class="mb-3">
+                        <label for="edit_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
+                        <div class="input-group mt-1">
+                            <input type="password" name="edit_password" id="edit_password" 
+                                   {% if not current_user.is_authenticated or not current_user.is_superuser() %}required{% endif %} 
+                                   class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+                            <button type="button" onclick="togglePasswordVisibility('edit_password')" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
+                                    style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
+                                <i class="fas fa-eye-slash" id="toggle_edit_password_icon"></i>
+                            </button>
+                        </div>
+                        {% if current_user.is_authenticated and current_user.is_superuser() %}
+                            <p class="text-xs text-indigo-500 mt-1">Como Superusuario, la contraseña es opcional para la liberación/edición.</p>
+                        {% else %}
+                            <p class="text-xs text-gray-500 mt-1">Requerida para cualquier acción sobre esta selección.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="modal-footer d-grid gap-2 d-sm-flex justify-content-sm-end">
+                    <!-- Botón para Editar (Si el backend lo implementa, puede cambiar 'action' a 'edit_selection') -->
+                    <button type="submit" id="btn-edit-selection"
+                            class="btn btn-warning rounded-xl text-base font-medium transition"
+                            onclick="document.getElementById('modal-action').value = 'edit_selection'">
+                        <i class="fas fa-edit me-2"></i> Editar Cliente
+                    </button>
+                    
+                    <!-- Botón para Liberar -->
+                    <button type="submit" id="btn-delete-selection"
+                            class="btn btn-danger rounded-xl text-base font-medium transition"
+                            onclick="document.getElementById('modal-action').value = 'delete_selection'">
+                        <i class="fas fa-trash-alt me-2"></i> Liberar Números
+                    </button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+</div>
+
+<!-- NEW MODAL: Image Zoom Modal (Bootstrap Modal) -->
+<div class="modal fade" id="image-zoom-modal-bs" tabindex="-1" aria-labelledby="imageZoomModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-lg-down">
+        <div class="modal-content rounded-xl bg-black">
+            <div class="modal-header border-bottom-0 bg-dark rounded-top-xl p-3">
+                <h5 class="modal-title text-white" id="imageZoomModalLabel">Vista Ampliada de la Imagen</h5>
+                <div>
+                    <button type="button" class="btn btn-secondary btn-sm me-2" onclick="handleZoom(1)">
+                        <i class="fas fa-search-plus me-1"></i> Zoom In
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm me-2" onclick="handleZoom(-1)">
+                        <i class="fas fa-search-minus me-1"></i> Zoom Out
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            
+            <!-- El overflow-auto permite arrastrar la imagen si el zoom la hace más grande que el modal -->
+            <div class="modal-body p-2 d-flex justify-content-center align-items-center overflow-auto" id="zoom-modal-body">
+                <img id="zoom-image" src="" alt="Imagen ampliada" 
+                     class="max-w-full max-h-full object-contain transition-transform duration-300 cursor-move" 
+                     style="transform: scale(1); transform-origin: center center;">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    // FIX 1: Se elimina la inicialización explícita de `new bootstrap.Modal(...)` si ya se usa `data-bs-toggle`. 
+    // Esto previene errores de inicialización si el script se ejecuta antes de que bootstrap.bundle.min.js termine de cargar.
+    // Dejamos las variables como referencia para un uso posterior más seguro.
+    const raffleInfoModalElement = document.getElementById('raffle-info-modal-bs');
+    const selectionModalElement = document.getElementById('selection-modal-bs');
+    const editModalElement = document.getElementById('edit-modal-bs');
+    const zoomModalElement = document.getElementById('image-zoom-modal-bs'); 
+    
+    // Almacenamiento de números seleccionados (azul pastel)
+    let selectedNumbers = [];
+    const numbersGrid = document.getElementById('numbers-grid');
+    
+    // Elementos del formulario de escritorio
+    const desktopSelectedNumbersDisplay = document.getElementById('selected_numbers_display');
+    const desktopSelectedNumbersInput = document.getElementById('selected_numbers_input');
+    const desktopSubmitButton = document.getElementById('submit_button');
+    
+    // Elementos del modal de selección (Mobile)
+    const modalSelectedNumbersDisplay = document.getElementById('modal_selected_numbers_display');
+    const modalSelectedNumbersInput = document.getElementById('modal_selected_numbers_input');
+    const modalSubmitButton = document.getElementById('modal_submit_button');
+    
+    // Función de actualización de estilos de botones
+    function updateButtonStyles(button, isSelectedNow, isSold) {
+        // Remover clases de color (siempre mejor remover antes de añadir)
+        button.classList.remove('bg-pastel-blue', 'text-blue-800', 'bg-pastel-green', 'text-green-800');
+        
+        if (isSold) {
+             button.classList.add('bg-pastel-red', 'text-red-800', 'cursor-not-allowed', 'hover:shadow-inner');
+             button.disabled = true;
+        } else if (isSelectedNow) {
+            button.classList.add('bg-pastel-blue', 'text-blue-800'); // Azul Pastel: Seleccionado
+            button.disabled = false;
+        } else {
+            button.classList.add('bg-pastel-green', 'text-green-800', 'hover:bg-green-300', 'hover:shadow-md'); // Verde Pastel: Disponible
+            button.disabled = false;
+        }
+    }
+
+    function updateSelectionState() {
+        // 1. Actualizar el display y los inputs ocultos (Escritorio y Móvil)
+        const isSelected = selectedNumbers.length > 0;
+        
+        selectedNumbers.sort((a, b) => parseInt(a) - parseInt(b));
+        const displayValue = isSelected ? selectedNumbers.join(', ') : 'Ninguno';
+        const inputValue = isSelected ? selectedNumbers.join(',') : '';
+
+        // Botones y estado de envío
+        const submitClasses = ['bg-indigo-600', 'hover:bg-indigo-700', 'focus:ring-indigo-500'];
+        const disabledClasses = ['bg-gray-400', 'hover:bg-gray-500', 'focus:ring-gray-500'];
+        
+        [desktopSubmitButton, modalSubmitButton].forEach(btn => {
+            if (btn) { // Verificar si el botón existe antes de manipularlo
+                btn.disabled = !isSelected;
+                
+                // Toggle de clases de color
+                if (isSelected) {
+                    btn.classList.add(...submitClasses);
+                    btn.classList.remove(...disabledClasses);
+                } else {
+                    btn.classList.add(...disabledClasses);
+                    btn.classList.remove(...submitClasses);
+                }
+            }
+        });
+        
+        // Actualizar displays
+        if (desktopSelectedNumbersDisplay) desktopSelectedNumbersDisplay.textContent = displayValue;
+        if (desktopSelectedNumbersInput) desktopSelectedNumbersInput.value = inputValue;
+        if (modalSelectedNumbersDisplay) modalSelectedNumbersDisplay.textContent = displayValue;
+        if (modalSelectedNumbersInput) modalSelectedNumbersInput.value = inputValue;
+
+        // 2. Aplicar/remover estilos de selección en la grilla
+        numbersGrid.querySelectorAll('.number-button').forEach(button => {
+            const number = button.dataset.number;
+            const isSelectedNow = selectedNumbers.includes(number);
+            const isSold = button.dataset.sold === 'true';
+
+            updateButtonStyles(button, isSelectedNow, isSold);
+        });
+    }
+
+    numbersGrid.addEventListener('click', (e) => {
+        // FIX 2: Simplificación del listener. Si el target tiene la clase 'number-button' o es su hijo directo, funciona.
+        let button = e.target.closest('.number-button');
+        
+        if (!button) return; 
+        
+        const number = button.dataset.number;
+        const isSold = button.dataset.sold === 'true';
+
+        if (isSold) return;
+
+        const index = selectedNumbers.indexOf(number);
+
+        if (index > -1) {
+            // Deseleccionar
+            selectedNumbers.splice(index, 1);
+        } else {
+            // Seleccionar
+            selectedNumbers.push(number);
+        }
+
+        updateSelectionState();
+    });
+    
+    // --- Lógica de Zoom (NEW) ---
+
+    let zoomLevel = 1; 
+
+    function openZoomModal(src) {
+        const imgElement = document.getElementById('zoom-image');
+        imgElement.src = src;
+        imgElement.style.transform = 'scale(1)'; // Reset zoom
+        zoomLevel = 1; // Reset zoom level
+        // El modal se abre automáticamente con data-bs-toggle
+    }
+
+    function handleZoom(direction) {
+        // direction: 1 for zoom in, -1 for zoom out
+        const step = 0.2;
+        const minZoom = 1;
+        const maxZoom = 3;
+
+        zoomLevel += direction * step;
+
+        if (zoomLevel < minZoom) zoomLevel = minZoom;
+        if (zoomLevel > maxZoom) zoomLevel = maxZoom;
+        
+        const imgElement = document.getElementById('zoom-image');
+        imgElement.style.transform = `scale(${zoomLevel})`;
+    }
+
+    // --- Lógica del Modal de Edición/Liberación (BS) ---
+
+    function openEditModal(selectionIds, numbersList, customerName, customerPhone) {
+        // Cargar datos en los inputs ocultos y de solo lectura
+        document.getElementById('modal-selection-ids').value = selectionIds;
+        document.getElementById('modal-number-display').textContent = numbersList;
+        
+        // Cargar datos en los campos de visualización del cliente (FIX: se asegura la carga aquí)
+        document.getElementById('customer_name_display').value = customerName;
+        document.getElementById('customer_phone_display').value = customerPhone;
+        
+        document.getElementById('edit_password').value = ''; // Limpiar campo de contraseña
+        
+        // Mostrar el modal (usando la API de Bootstrap JS)
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal.getInstance(editModalElement) === null) {
+            new bootstrap.Modal(editModalElement).show();
+        } else if (typeof bootstrap !== 'undefined') {
+             bootstrap.Modal.getInstance(editModalElement).show();
+        }
+    }
+    
+    // Función para alternar la visibilidad de la contraseña
+    function togglePasswordVisibility(fieldId) {
+        const field = document.getElementById(fieldId);
+        const icon = document.getElementById(`toggle_${fieldId}_icon`);
+        
+        if (field.type === 'password') {
+            field.type = 'text';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        } else {
+            field.type = 'password';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+    }
+
+    // Asegurar que el estado inicial se renderice
+    document.addEventListener('DOMContentLoaded', updateSelectionState);
+</script>
+{% endblock %}

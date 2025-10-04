@@ -1,0 +1,69 @@
+<!-- login.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Uso de Flexbox (min-vh-full-center) para centrar el contenido en el viewport -->
+<div class="min-vh-full-center">
+    <!-- El contenedor se limita a max-w-md de Tailwind, pero usa p-4 de Bootstrap/Tailwind -->
+    <div class="w-100 max-w-md bg-white p-4 p-md-5 rounded-xl shadow-2xl border border-gray-100">
+        <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-4">Iniciar Sesión</h2>
+        
+        <form method="POST" action="{{ url_for('rifas.login') }}" class="space-y-4">
+            
+            <!-- Campo Email -->
+            <div class="form-group">
+                <label for="email" class="form-label text-sm font-medium text-gray-700">Email</label>
+                <div class="mt-1">
+                    <input id="email" name="email" type="email" autocomplete="email" required
+                           class="form-control px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+            </div>
+
+            <!-- Campo Contraseña con Toggle -->
+            <div class="form-group">
+                <label for="password" class="form-label text-sm font-medium text-gray-700">Contraseña</label>
+                <div class="mt-1 input-group rounded-xl shadow-sm">
+                    <input id="password" name="password" type="password" autocomplete="current-password" required
+                           class="form-control pr-10 pl-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <button type="button" id="togglePassword" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
+                            style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
+                        <i id="passwordIcon" class="far fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Enlace a Registro -->
+            <div class="d-flex justify-content-end align-items-center pt-2">
+                <div class="text-sm">
+                    <a href="{{ url_for('rifas.register') }}" class="font-medium text-indigo-600 hover:text-indigo-500 transition">
+                        ¿No tienes cuenta? Regístrate aquí
+                    </a>
+                </div>
+            </div>
+
+            <!-- Botón de Envío -->
+            <div class="pt-3">
+                <button type="submit"
+                        class="w-full btn bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                    Iniciar Sesión
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('togglePassword').addEventListener('click', function (e) {
+        const passwordInput = document.getElementById('password');
+        const passwordIcon = document.getElementById('passwordIcon');
+        
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Cambiar el icono del ojo
+        passwordIcon.classList.toggle('fa-eye-slash');
+        passwordIcon.classList.toggle('fa-eye');
+    });
+</script>
+
+{% endblock %}

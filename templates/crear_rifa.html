@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Uso de Flexbox (min-vh-full-center) para centrar el contenido en el viewport -->
+<div class="min-vh-full-center">
+    <div class="w-100 max-w-2xl bg-white p-4 p-md-5 rounded-xl shadow-2xl border border-gray-100">
+        <h1 class="text-3xl font-extrabold text-gray-900 text-center mb-4">Crear Nueva Rifa</h1>
+        
+        <form method="POST" action="{{ url_for('rifas.crear_rifa') }}" enctype="multipart/form-data" class="space-y-4">
+            
+            <!-- Imagen -->
+            <div class="form-group">
+                <label for="image" class="form-label text-sm font-medium text-gray-700">Imagen del Producto (JPG, PNG)</label>
+                <input id="image" name="image" type="file" accept=".jpg,.jpeg,.png" required
+                       class="form-control mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            </div>
+
+            <!-- Número de Rifa y Nombre (Grid de Bootstrap) -->
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label for="raffle_number" class="form-label text-sm font-medium text-gray-700">Número de la Rifa (Identificador)</label>
+                    <input id="raffle_number" name="raffle_number" type="text" required
+                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="col-12 col-md-6">
+                    <label for="name" class="form-label text-sm font-medium text-gray-700">Nombre de la Rifa</label>
+                    <input id="name" name="name" type="text" required
+                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Precio y Premio (Grid de Bootstrap) -->
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label for="price" class="form-label text-sm font-medium text-gray-700">Precio del Número (₡)</label>
+                    <input id="price" name="price" type="number" step="0.01" min="0.01" required
+                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="col-12 col-md-6">
+                    <label for="prize" class="form-label text-sm font-medium text-gray-700">Premio</label>
+                    <input id="prize" name="prize" type="text" required
+                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Detalle de la Rifa -->
+            <div class="form-group">
+                <label for="detail" class="form-label text-sm font-medium text-gray-700">Detalle de la Rifa</label>
+                <textarea id="detail" name="detail" rows="3" required
+                          class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+            </div>
+
+            <!-- Fecha y Hora (Grid de Bootstrap) -->
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label for="raffle_date" class="form-label text-sm font-medium text-gray-700">Fecha de la Rifa</label>
+                    <input id="raffle_date" name="raffle_date" type="date" required
+                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="col-12 col-md-6">
+                    <label for="raffle_time" class="form-label text-sm font-medium text-gray-700">Hora de la Rifa (Opcional)</label>
+                    <input id="raffle_time" name="raffle_time" type="time"
+                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Botón de Envío -->
+            <div class="pt-3">
+                <button type="submit"
+                        class="w-full btn bg-green-600 hover:bg-green-700 text-white py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">
+                    Crear Rifa
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

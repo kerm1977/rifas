@@ -1,0 +1,66 @@
+<!-- ver_rifas.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<!-- El contenedor principal del base.html ya maneja el padding y el ancho máximo -->
+<div class="py-4">
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-5 text-center">Rifas Disponibles</h1>
+
+    <!-- GRID de Bootstrap: 1 columna en móvil, 2 en sm, 3 en lg -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+        {% for rifa in rifas %}
+        <div class="col">
+            <div class="card h-100 rounded-xl shadow-lg hover:shadow-xl transition duration-300 overflow-hidden d-flex flex-column">
+                <!-- Imagen -->
+                <div class="h-48 overflow-hidden">
+                    <img src="{{ get_image_url(rifa.image_filename) }}" alt="Imagen de la Rifa: {{ rifa.name }}" 
+                         class="w-full h-full object-cover transition duration-500 ease-in-out transform hover:scale-105"
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?text=Sin+Imagen';"
+                    >
+                </div>
+
+                <!-- Contenido de la Tarjeta -->
+                <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Rifa #{{ rifa.raffle_number }}: {{ rifa.name }}</h2>
+                    
+                    <p class="text-2xl font-extrabold text-indigo-600 mb-3">₡{{ "{:,.0f}".format(rifa.price) }}</p>
+
+                    <div class="space-y-2 text-sm text-gray-600 mb-3 flex-grow">
+                        <p><i class="fas fa-calendar-alt text-indigo-500 me-2"></i> <strong>Fecha:</strong> {{ rifa.raffle_date }}</p>
+                        {% if rifa.raffle_time %}
+                            <p><i class="fas fa-clock text-indigo-500 me-2"></i> <strong>Hora:</strong> {{ rifa.raffle_time }}</p>
+                        {% endif %}
+                        <p><i class="fas fa-trophy text-yellow-500 me-2"></i> <strong>Premio:</strong> {{ rifa.prize }}</p>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="d-flex flex-column space-y-3 mt-3">
+                        <a href="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}"
+                           class="btn bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition shadow-md hover:shadow-lg">
+                            Ver Números y Participar
+                        </a>
+                        
+                        {% if current_user.is_authenticated and current_user.is_superuser() %}
+                        <a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}"
+                           class="btn btn-sm text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 rounded-xl text-sm font-medium transition">
+                           <i class="fas fa-edit me-1"></i> Editar Rifa
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center p-5 bg-gray-100 rounded-xl">
+                <p class="text-xl text-gray-600">No hay rifas disponibles en este momento.</p>
+                {% if current_user.is_authenticated and current_user.is_superuser() %}
+                <p class="mt-3"><a href="{{ url_for('rifas.crear_rifa') }}" class="text-indigo-600 font-semibold hover:text-indigo-800">Crea la primera rifa aquí.</a></p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

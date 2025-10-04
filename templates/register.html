@@ -1,0 +1,167 @@
+<!-- register.html -->
+
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Uso de Flexbox (min-vh-full-center) para centrar el contenido en el viewport -->
+<div class="min-vh-full-center">
+    <div class="w-100 max-w-xl bg-white p-4 p-md-5 rounded-xl shadow-2xl border border-gray-100">
+        <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-4">Registro de Nuevo Usuario</h2>
+        
+        <form method="POST" action="{{ url_for('rifas.register') }}" class="space-y-4">
+            
+            <!-- Bloque de Información Personal -->
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label for="first_name" class="form-label text-sm font-medium text-gray-700">Nombre</label>
+                    <input id="first_name" name="first_name" type="text" required class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="col-12 col-md-6">
+                    <label for="last_name_1" class="form-label text-sm font-medium text-gray-700">Primer Apellido</label>
+                    <input id="last_name_1" name="last_name_1" type="text" required class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="col-12 col-md-6">
+                    <label for="last_name_2" class="form-label text-sm font-medium text-gray-700">Segundo Apellido (Opcional)</label>
+                    <input id="last_name_2" name="last_name_2" type="text" class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div class="col-12 col-md-6">
+                    <label for="phone" class="form-label text-sm font-medium text-gray-700">Teléfono (8 dígitos)</label>
+                    <input id="phone" name="phone" type="tel" pattern="[0-9]{8}" required 
+                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                           oninput="this.value = this.value.replace(/[^0-9]/g, '').substring(0, 8);" 
+                           title="Debe ser un número de 8 dígitos">
+                    <p id="phone-validation" class="mt-1 text-xs text-red-500 d-none">Debe ingresar exactamente 8 dígitos.</p>
+                </div>
+            </div>
+
+            <!-- Email y Contraseña -->
+            <div class="form-group pt-2">
+                <label for="email" class="form-label text-sm font-medium text-gray-700">Email</label>
+                <input id="email" name="email" type="email" autocomplete="email" required class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <label for="password" class="form-label text-sm font-medium text-gray-700">Contraseña (Mín. 8 caracteres, o se autogenera)</label>
+                    <input id="password" name="password" type="password" minlength="8" class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <p id="password-validation" class="mt-1 text-xs text-red-500 d-none">Mínimo 8 caracteres requeridos si no se autogenera.</p>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label for="confirm_password" class="form-label text-sm font-medium text-gray-700">Confirmar Contraseña</label>
+                    <input id="confirm_password" name="confirm_password" type="password" class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <p id="match-validation" class="mt-1 text-xs text-red-500 d-none">Las contraseñas no coinciden.</p>
+                </div>
+            </div>
+
+            <!-- Bloque de Pago/Juego -->
+            <div class="space-y-4 pt-4 border-t border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">Información de Pago y Juego</h3>
+                
+                <div class="form-group">
+                    <label for="sinpe_name" class="form-label text-sm font-medium text-gray-700">Nombre Sinpe / Para Pago (Opcional)</label>
+                    <input id="sinpe_name" name="sinpe_name" type="text" class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div class="form-group">
+                    <label for="game_type" class="form-label text-sm font-medium text-gray-700">Se jugará con:</label>
+                    <select id="game_type" name="game_type" required 
+                            class="form-select px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                            onchange="toggleDescription()">
+                        <option value="Chances">Chances</option>
+                        <option value="Loteria">Lotería</option>
+                        <option value="Ruleta">Ruleta</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div id="description_field" class="d-none">
+                    <label for="game_description" class="form-label text-sm font-medium text-gray-700">Descripción (Si "Otro")</label>
+                    <textarea id="game_description" name="game_description" rows="2" class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end align-items-center pt-2">
+                <div class="text-sm">
+                    <a href="{{ url_for('rifas.login') }}" class="font-medium text-indigo-600 hover:text-indigo-500 transition">
+                        ¿Ya tienes cuenta? Inicia sesión
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" id="registerButton"
+                        class="w-full btn bg-green-600 hover:bg-green-700 text-white py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">
+                    Registrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const phoneInput = document.getElementById('phone');
+    const phoneValidation = document.getElementById('phone-validation');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
+    const passwordValidation = document.getElementById('password-validation');
+    const matchValidation = document.getElementById('match-validation');
+    const registerButton = document.getElementById('registerButton');
+    const gameTypeSelect = document.getElementById('game_type');
+    const descriptionField = document.getElementById('description_field');
+
+    function validateForm() {
+        let isValid = true;
+
+        // Validación de Teléfono (8 dígitos)
+        if (phoneInput.value.length !== 8) {
+            phoneValidation.classList.remove('d-none');
+            isValid = false;
+        } else {
+            phoneValidation.classList.add('d-none');
+        }
+
+        // Validación de Contraseña (Mín. 8 caracteres si se agrega)
+        if (passwordInput.value.length > 0 && passwordInput.value.length < 8) {
+            passwordValidation.classList.remove('d-none');
+            isValid = false;
+        } else {
+            passwordValidation.classList.add('d-none');
+        }
+
+        // Validación de Coincidencia de Contraseñas (si ambas tienen valor)
+        if (passwordInput.value !== confirmPasswordInput.value && (passwordInput.value.length > 0 || confirmPasswordInput.value.length > 0)) {
+            matchValidation.classList.remove('d-none');
+            isValid = false;
+        } else {
+            matchValidation.classList.add('d-none');
+        }
+
+        // Habilitar/Deshabilitar el botón de registro
+        registerButton.disabled = !isValid;
+        registerButton.classList.toggle('opacity-50', !isValid);
+
+        return isValid;
+    }
+
+    // Validación automática e inmediata
+    phoneInput.addEventListener('input', validateForm);
+    passwordInput.addEventListener('input', validateForm);
+    confirmPasswordInput.addEventListener('input', validateForm);
+    
+    // Función para mostrar el campo de descripción si se selecciona "Otro"
+    function toggleDescription() {
+        if (gameTypeSelect.value === 'Otro') {
+            descriptionField.classList.remove('d-none');
+        } else {
+            descriptionField.classList.add('d-none');
+        }
+    }
+
+    // Inicializar la validación al cargar
+    window.onload = () => {
+        validateForm();
+        toggleDescription();
+    };
+</script>
+{% endblock %}

@@ -1,0 +1,72 @@
+Hola necesito crear un sistema de rifas que permita crear varias rifas
+Esto es necesario hacerlo con flask, flexbox y sqlite 100% responsiva
+Crea un superusuario automáticamente con el correo kenth1977@gmail.com con la contraseña CR129x7848n encriptada con bcrypt
+sin necesidad de registarme sino que sea un usuario permanente
+va a contener un archivo llamado rifas.py donde va a llevar absolutamente toda la lógica y va a exporta por medio de blueprints lo necesari a app.py que se encargará de ejecutar la app
+
+
+base.html va a contener la vista principal y las otras vistas heredan de base.html
+
+
+login.html
+va a contener un login por email  y password que tenga un ojo para ver la clave además de un enlaces para registrarse
+
+	
+register.html	
+		Nombre
+		Primer Apellido
+		Segundo Apellido
+		Teléfono (8 dígitos): esta validación tiene que ser inmediata y automática
+		Email:
+		Contraseña (Mín. 8 caracteres): (si no agrega uno, Autogenera una) esta validación tiene que ser inmediata y automática y encriptado por bycript
+		Confirmar Contraseña: (si no agrega uno, Autogenera una) esta validación tiene que ser inmediata y automática y encriptado por bycript
+		# Sinpe / Para Pago
+		Nombre Sinpe / Para Pago
+		Select se jugará con (chances, Lotería, Ruleta, Otro):
+		Si  se jugará con == Otro  Aparezca un campo que diga Descripción, 
+
+
+ademas de un crud para crear una rifa
+
+solo visto por superusuario
+crear_rifa.html
+esta vista va a contener un formulario que permita crear rifas los campos son:
+imagen(jpg, png) Permita subir la imagen del producto
+Número de la rifa
+Nombre de la Rifa
+Precio del número
+Premio 
+detalle de la rifa 
+fecha de la rifa 
+hora de la rifa(No obligatorio)
+Crear Rifa
+
+solo visto por el superusuario
+editar_rifa.html
+Permite editar absolutamente toda la información, exacta ingresada a crear_rifa.html
+
+
+
+detalle_rifa.html
+Muesta absolutamente toda la información agregada desde crear rifas y la numeración desde el 00 al 99 
+que cuando un usuario seleccione un numero o más permita colocar el nombre y el numero de teléfono y permita agregar una contraseña para que nadie pueda cambiar su seleccion.
+y al seleccionar el o los números se agregue abajo de la lista de los números en una tabla que diga el nombre, el teléfono, y los números seleccionados y a la par un botón que diga editar que al presionar se abra un modal que permita agregar más numeros de la lista o permita eliminar un número y que quede libre para ser seleccionado.. 
+Además que la lista de los números seleccionados tomen un color rojo pastel, los que se van tocando pasen a un azúl pastel y los que no se han seleccionado sean verde pastel
+
+
+ver_rifas.html
+Permite ver las rifas en forma de tarjeta con la información 
+imagen(jpg, png) Permita subir la imagen del producto
+
+Número de la rifa
+Nombre de la Rifa
+Precio del número
+fecha de la rifa 
+
+
+
+
+
+
+
+
