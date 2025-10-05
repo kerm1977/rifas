@@ -5,83 +5,70 @@
 <nav class="bg-gray-800/80 sticky top-0 z-50 backdrop-blur-sm shadow-lg">
 <div class="container-fluid max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 d-flex justify-content-between align-items-center flex-wrap py-3">
 
-    <!-- Título del Sistema -->
-    <a class="text-white text-xl font-bold text-decoration-none" href="{{ url_for('rifas.ver_rifas') }}">Sistema de Rifas</a>
+<!-- Título del Sistema -->
+<a class="text-white text-xl font-bold text-decoration-none" href="{{ url_for('rifas.ver_rifas') }}">Sistema de Rifas</a>
+
+<!-- Botón de Hamburguesa (Visible solo en móvil) -->
+<button id="nav-toggler" type="button" 
+        class="d-lg-none p-2 rounded-md hover:bg-gray-700 text-gray-300">
+    <i class="fas fa-bars fa-lg"></i>
+</button>
+
+<!-- Contenido Plegable de la Nav (Ahora controlado por JS/CSS en base.css y base.js) -->
+<ul id="nav-menu" class="flex-wrap justify-end items-center mt-3 mt-lg-0 list-unstyled p-0 m-0 lg:flex-row lg:items-center">
     
-    <!-- Botón de Hamburguesa (Visible solo en móvil) -->
-    <button id="nav-toggler" type="button" 
-            class="d-lg-none p-2 rounded-md hover:bg-gray-700 text-gray-300">
-        <i class="fas fa-bars fa-lg"></i>
-    </button>
+    <!-- ENLACE NUEVO: Streaming de Video (Activo) -->
+    <li class="nav-item w-auto">
+        <a href="{{ url_for('movies.browse_files') }}" class="nav-link text-yellow-300 hover:bg-gray-700 hover:text-yellow-100 px-3 rounded-md text-sm font-medium text-decoration-none">
+            <i class="fas fa-film me-1"></i> Streaming
+        </a>
+    </li>
 
-    <!-- Contenido Plegable de la Nav -->
-    <ul id="nav-menu" class="flex flex-row flex-wrap justify-end items-center mt-3 mt-lg-0 list-unstyled p-0 m-0 lg:flex-row lg:items-center">
+    <!-- ENLACE SIEMPRE VISIBLE: Ver Rifas -->
+    <li class="nav-item w-auto">
+        <a href="{{ url_for('rifas.ver_rifas') }}" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white px-3 rounded-md text-sm font-medium text-decoration-none">Ver Rifas</a>
+    </li>
+    
+    {% if current_user.is_authenticated and current_user.is_superuser() %}
+    <!-- ENLACE SOLO SUPERUSUARIO: Crear Rifa -->
+    <li class="nav-item w-auto">
+        <a href="{{ url_for('rifas.crear_rifa') }}" class="btn bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-2 rounded-md text-sm font-medium transition text-decoration-none">
+            <i class="fas fa-plus me-1"></i> Crear Rifa
+        </a>
+    </li>
+    
+    <!-- Usuario Autenticado: Email y Cerrar Sesión -->
+    <li class="nav-item w-auto">
+        <span class="nav-link text-red-300 px-3 py-2 text-sm font-medium">({{ current_user.email }})</span>
+    </li>
+    <li class="nav-item w-auto">
+        <a href="{{ url_for('rifas.logout') }}" class="nav-link text-red-400 hover:bg-gray-700 hover:text-red-200 px-3 rounded-md text-sm font-medium text-decoration-none">
+            <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
+        </a>
+    </li>
+    
+    {% elif current_user.is_authenticated %}
+    <!-- Usuario Autenticado (No Superuser): Email y Cerrar Sesión -->
+    <li class="nav-item w-auto">
+        <span class="nav-link text-red-300 px-3 py-2 text-sm font-medium">({{ current_user.email }})</span>
+    </li>
+    <li class="nav-item w-auto">
+        <a href="{{ url_for('rifas.logout') }}" class="nav-link text-red-400 hover:bg-gray-700 hover:text-red-200 px-3 rounded-md text-sm font-medium text-decoration-none">
+            <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
+        </a>
+    </li>
         
-        <!-- ENLACE NUEVO: Streaming de Video (Activo) -->
-        <li class="nav-item w-auto">
-            <a href="{{ url_for('movies.browse_files') }}" class="nav-link text-yellow-300 hover:bg-gray-700 hover:text-yellow-100 px-3 rounded-md text-sm font-medium text-decoration-none">
-                <i class="fas fa-film me-1"></i> Streaming
-            </a>
-        </li>
+    {% else %}
+    <!-- Usuario No Autenticado: Login y Registro -->
+    <li class="nav-item w-auto">
+        <a href="{{ url_for('rifas.login') }}" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white px-3 rounded-md text-sm font-medium text-decoration-none">Login</a>
+    </li>
+    <li class="nav-item w-auto">
+        <a href="{{ url_for('rifas.register') }}" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white px-3 rounded-md text-sm font-medium text-decoration-none">Registro</a>
+    </li>
+    {% endif %}
+</ul>
 
-        <!-- ENLACE SIEMPRE VISIBLE: Ver Rifas -->
-        <li class="nav-item w-auto">
-            <a href="{{ url_for('rifas.ver_rifas') }}" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white px-3 rounded-md text-sm font-medium text-decoration-none">Ver Rifas</a>
-        </li>
-        
-        {% if current_user.is_authenticated and current_user.is_superuser() %}
-        <!-- ENLACE SOLO SUPERUSUARIO: Crear Rifa -->
-        <li class="nav-item w-auto">
-            <a href="{{ url_for('rifas.crear_rifa') }}" class="btn bg-indigo-600 text-white hover:bg-indigo-700 px-3 py-2 rounded-md text-sm font-medium transition text-decoration-none">
-                <i class="fas fa-plus me-1"></i> Crear Rifa
-            </a>
-        </li>
-        
-        <!-- Usuario Autenticado: Email y Cerrar Sesión -->
-        <li class="nav-item w-auto">
-            <span class="nav-link text-red-300 px-3 py-2 text-sm font-medium">({{ current_user.email }})</span>
-        </li>
-        <li class="nav-item w-auto">
-            <a href="{{ url_for('rifas.logout') }}" class="nav-link text-red-400 hover:bg-gray-700 hover:text-red-200 px-3 rounded-md text-sm font-medium text-decoration-none">
-                <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
-            </a>
-        </li>
-        
-        {% elif current_user.is_authenticated %}
-        <!-- Usuario Autenticado (No Superuser): Email y Cerrar Sesión -->
-        <li class="nav-item w-auto">
-            <span class="nav-link text-red-300 px-3 py-2 text-sm font-medium">({{ current_user.email }})</span>
-        </li>
-        <li class="nav-item w-auto">
-            <a href="{{ url_for('rifas.logout') }}" class="nav-link text-red-400 hover:bg-gray-700 hover:text-red-200 px-3 rounded-md text-sm font-medium text-decoration-none">
-                <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
-            </a>
-        </li>
-            
-        {% else %}
-        <!-- Usuario No Autenticado: Login y Registro -->
-        <li class="nav-item w-auto">
-            <a href="{{ url_for('rifas.login') }}" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white px-3 rounded-md text-sm font-medium text-decoration-none">Login</a>
-        </li>
-        <li class="nav-item w-auto">
-            <a href="{{ url_for('rifas.register') }}" class="nav-link text-gray-300 hover:bg-gray-700 hover:text-white px-3 rounded-md text-sm font-medium text-decoration-none">Registro</a>
-        </li>
-        {% endif %}
-    </ul>
 </div>
 
 </nav>
-
-<script>
-// Lógica básica para el menú hamburguesa (mantenida)
-document.getElementById('nav-toggler').addEventListener('click', function() {
-const menu = document.getElementById('nav-menu');
-if (menu.classList.contains('d-none')) {
-menu.classList.remove('d-none');
-menu.classList.add('flex', 'flex-col', 'w-full');
-} else {
-menu.classList.add('d-none');
-menu.classList.remove('flex', 'flex-col', 'w-full');
-}
-});
-</script>

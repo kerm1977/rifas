@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
+{# ELIMINACIÓN DE ESTILOS EN LÍNEA: El CSS de 'scrolling-fade' se movió a base.css #}
 
 <div class="container-fluid max-w-7xl mx-auto p-4 md:p-8">
-<h1 class="text-3xl font-extrabold text-gray-900 mb-3 text-center">{{ rifa.name }} (Rifa #{{ rifa.raffle_number }})</h1>
+{# CAMBIO: Se usa text-2xl en móvil y md:text-4xl en escritorio para reducir el título #}
+<h1 class="text-2xl md:text-4xl font-extrabold text-gray-900 mb-3 text-center">{{ rifa.name }} (Rifa #{{ rifa.raffle_number }})</h1>
 
 <!-- Botón para Abrir Modal de Info (Visible siempre) -->
 
@@ -34,31 +36,34 @@ text-white bg-indigo-600 hover:bg-indigo-700 transition transform hover:scale-10
 {% set winner_info = get_winner_info(rifa.id, winning_number) %}
 
 {% if winner_info and 'status' not in winner_info %}
-    {# Caso: Ganador Activo (is_canceled = 0) - Formato vertical mejorado #}
-    <li class="bg-yellow-100 p-3 rounded-lg border border-yellow-300">
-        <p class="font-bold text-lg text-yellow-900 mb-1">
-            Número Ganador: {{ winning_number }}
-        </p>
-        <p class="text-gray-800 mb-0 ps-3">
-            <i class="fas fa-user me-1 text-yellow-700"></i> Cliente: <span class="font-extrabold">{{ winner_info.customer_name }}</span><br>
-            <i class="fas fa-phone me-1 text-yellow-700"></i> Teléfono: {{ winner_info.customer_phone }}
-        </p>
-    </li>
+{# Caso: Ganador Activo (is_canceled = 0) - Formato vertical mejorado #}
+<li class="bg-yellow-100 p-3 rounded-lg border border-yellow-300">
+<p class="font-bold text-lg text-yellow-900 mb-1">
+Número Ganador: {{ winning_number }}
+</p>
+<p class="text-gray-800 mb-0 ps-3">
+<i class="fas fa-user me-1 text-yellow-700"></i> Cliente: <span class="font-extrabold">{{ winner_info.customer_name }}</span>
+
+
+
+<i class="fas fa-phone me-1 text-yellow-700"></i> Teléfono: {{ winner_info.customer_phone }}
+</p>
+</li>
 {% else %}
-    {# Caso: No hay ganador activo o fue cancelado/eliminado - Formato conciso #}
-    <li class="d-flex flex-column bg-red-100 p-3 rounded-lg border border-red-300">
-        <span class="font-bold text-lg text-red-800">Número Ganador: {{ winning_number }}</span>
-        <span class="text-red-700 font-semibold mt-1">
-            {% if winner_info.status == 'CANCELADO' %}
-                <i class="fas fa-exclamation-triangle me-1"></i> **ESTADO: CANCELADO** (Cliente: {{ winner_info.customer_name }}, Teléfono: {{ winner_info.customer_phone }}).
-            {% else %}
-                <i class="fas fa-times-circle me-1"></i> **ESTADO: NO VENDIDO / ELIMINADO.**
-            {% endif %}
-        </span>
-        <span class="text-red-500 text-sm mt-1">
-            Vuelva a sortear o anuncie el suplente.
-        </span>
-    </li>
+{# Caso: No hay ganador activo o fue cancelado/eliminado - Formato conciso #}
+<li class="d-flex flex-column bg-red-100 p-3 rounded-lg border border-red-300">
+<span class="font-bold text-lg text-red-800">Número Ganador: {{ winning_number }}</span>
+<span class="text-red-700 font-semibold mt-1">
+{% if winner_info.status == 'CANCELADO' %}
+<i class="fas fa-exclamation-triangle me-1"></i> ESTADO: CANCELADO (Cliente: {{ winner_info.customer_name }}, Teléfono: {{ winner_info.customer_phone }}).
+{% else %}
+<i class="fas fa-times-circle me-1"></i> ESTADO: NO VENDIDO / ELIMINADO.
+{% endif %}
+</span>
+<span class="text-red-500 text-sm mt-1">
+Vuelva a sortear o anuncie el suplente.
+</span>
+</li>
 {% endif %}
 
 {% endfor %}
@@ -126,34 +131,34 @@ d-none d-lg-block p-4 bg-white rounded-xl border border-indigo-100">
 <input type="hidden" name="selected_numbers" id="selected_numbers_input" value="">
 
 <div class="mb-3 p-3 bg-pastel-blue rounded-xl border border-blue-300">
-    <label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar:</label>
-    <span id="selected_numbers_display" class="d-block text-lg font-extrabold text-blue-800">Ninguno</span>
+<label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar:</label>
+<span id="selected_numbers_display" class="d-block text-lg font-extrabold text-blue-800">Ninguno</span>
 </div>
 
 <div class="space-y-3">
-    <div>
-        <label for="customer_name" class="form-label text-sm font-medium text-gray-700">Nombre:</label>
-        <input type="text" name="customer_name" id="customer_name" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
-    </div>
-    <div>
-        <label for="customer_phone" class="form-label text-sm font-medium text-gray-700">Teléfono (8 dígitos):</label>
-        <input type="tel" name="customer_phone" id="customer_phone" pattern="[0-9]{8}" maxlength="8" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
-    </div>
-    <div>
-        <label for="selection_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
-        <div class="input-group mt-1">
-            <input type="password" name="selection_password" id="selection_password" required minlength="4" class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
-            <button type="button" onclick="togglePasswordVisibility('selection_password')" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
-                    style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
-                <i class="fas fa-eye-slash" id="toggle_selection_password_icon"></i>
-            </button>
-        </div>
-        <p class="text-xs text-gray-500 mt-1">Necesaria para editar/eliminar la selección más tarde.</p>
-    </div>
+<div>
+<label for="customer_name" class="form-label text-sm font-medium text-gray-700">Nombre:</label>
+<input type="text" name="customer_name" id="customer_name" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+</div>
+<div>
+<label for="customer_phone" class="form-label text-sm font-medium text-gray-700">Teléfono (8 dígitos):</label>
+<input type="tel" name="customer_phone" id="customer_phone" pattern="[0-9]{8}" maxlength="8" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+</div>
+<div>
+<label for="selection_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
+<div class="input-group mt-1">
+<input type="password" name="selection_password" id="selection_password" required minlength="4" class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+<button type="button" onclick="togglePasswordVisibility('selection_password')" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
+style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
+<i class="fas fa-eye-slash" id="toggle_selection_password_icon"></i>
+</button>
+</div>
+<p class="text-xs text-gray-500 mt-1">Necesaria para editar/eliminar la selección más tarde.</p>
+</div>
 </div>
 
 <button type="submit" id="submit_button" disabled class="mt-3 w-full btn text-lg font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-    Comprar Números Seleccionados
+Comprar Números Seleccionados
 </button>
 
 </form>
@@ -204,28 +209,29 @@ Números Disponibles:
 {# Usaremos una clase simple para mostrar los cancelados si queremos que se vean #}
 {% set is_canceled = selection_data is not none and selection_data.is_canceled == 1 %}
 
-<button type="button" 
-    data-number="{{ number_str }}" 
-    data-sold="{{ 'true' if is_sold or is_canceled else 'false' }}"
-    class="number-button text-center py-2 rounded-lg font-bold transition-all duration-150
-            min-w-[40px] max-w-[10%] flex-shrink-0 flex-grow
-            
-            {% if is_sold %}
-                bg-pastel-red text-red-800 cursor-not-allowed hover:shadow-inner
-            {% elif is_canceled and current_user.is_authenticated and current_user.is_superuser() %}
-                {# Muestra Cancelado en un color que indique disponibilidad (verde sólido) solo al superusuario #}
-                bg-green-500 text-white cursor-not-allowed hover:shadow-inner 
-            {% else %}
-                {# Disponible #}
-                bg-pastel-green text-green-800 hover:bg-green-300 hover:shadow-md
-            {% endif %}"
-    {% if is_sold or (is_canceled and current_user.is_authenticated and current_user.is_superuser()) %}disabled{% endif %}>
-    
-    {{ number_str }}
-    
-    {% if is_canceled and current_user.is_authenticated and current_user.is_superuser() %}
-        <i class="fas fa-ban text-sm ms-1 d-none d-sm-inline"></i>
-    {% endif %}
+<button type="button"
+data-number="{{ number_str }}"
+data-sold="{{ 'true' if is_sold or is_canceled else 'false' }}"
+class="number-button text-center py-2 rounded-lg font-bold transition-all duration-150
+min-w-[40px] max-w-[10%] flex-shrink-0 flex-grow
+
+        {% if is_sold %}
+            bg-pastel-red text-red-800 cursor-not-allowed hover:shadow-inner
+        {% elif is_canceled and current_user.is_authenticated and current_user.is_superuser() %}
+            {# Muestra Cancelado en un color que indique disponibilidad (verde sólido) solo al superusuario #}
+            bg-green-500 text-white cursor-not-allowed hover:shadow-inner 
+        {% else %}
+            {# Disponible #}
+            bg-pastel-green text-green-800 hover:bg-green-300 hover:shadow-md
+        {% endif %}"
+{% if is_sold or (is_canceled and current_user.is_authenticated and current_user.is_superuser()) %}disabled{% endif %}>
+
+{{ number_str }}
+
+{% if is_canceled and current_user.is_authenticated and current_user.is_superuser() %}
+    <i class="fas fa-ban text-sm ms-1 d-none d-sm-inline"></i>
+{% endif %}
+
 </button>
 
 {% endfor %}
@@ -243,15 +249,31 @@ Números Disponibles:
 
 {% if grouped_selections %}
 
-<!-- Grid de Cards responsivo: 1 columna en móvil, 2 en tablets/escritorio pequeño, 3 en escritorio grande -->
+<!-- NUEVO BUSCADOR -->
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+<div class="mb-4">
+<div class="input-group">
+<span class="input-group-text bg-gray-100 border-gray-300 rounded-l-xl"><i class="fas fa-search text-gray-500"></i></span>
+<input type="text"
+id="search-input"
+class="form-control p-3 border-gray-300 rounded-r-xl focus:border-indigo-500 focus:ring-indigo-500 shadow-sm"
+placeholder="Buscar por Número, Nombre o Teléfono del cliente..."
+oninput="filterCards()">
+</div>
+</div>
+
+<!-- CONTENEDOR CON SCROLL Y DIFUMINADO (max-h-96 es eliminado para permitir scroll del body) -->
+
+<div id="cards-scroll-wrapper" class="scrolling-fade relative" style="max-height: 400px;">
+<div id="search-results-container" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
 {% for key, group in grouped_selections.items() %}
 
 {# Variables para el Card #}
 {% set group_total_price = group.numbers | length * rifa.price %}
 {% set formatted_price = "₡%s"|format("%.2f"|format(group_total_price) | replace('.', ',')) %}
 {% set numbers_list = (group.numbers | sort) | join(', ') %}
+{# Preparamos los números sin comas ni espacios para la búsqueda: "010512" #}
+{% set numbers_for_search = (group.numbers | sort) | join('') %}
 
 {# Clases condicionales para el card #}
 {% set card_base_class = 'card rounded-xl overflow-hidden h-100' %}
@@ -271,114 +293,118 @@ Números Disponibles:
 {% set header_bg_color = 'bg-pastel-red' %}
 {% endif %}
 
-<div class="col">
-<div class="{{ card_base_class }} {{ bg_color }} {{ border_color }}">
+<div class="col search-card" 
+     data-name="{{ group.customer_name | lower }}" 
+     data-phone="{{ group.customer_phone }}" 
+     data-numbers="{{ numbers_list | replace(' ', '') | replace(',', '') }}">
+    <div class="{{ card_base_class }} {{ bg_color }} {{ border_color }}">
 
-<!-- Encabezado del Card: Nombre y Teléfono -->
-<div class="{{ header_base_class }} {{ header_bg_color }} {{ border_color }} d-flex justify-content-between align-items-center">
-    <div>
-        <h5 class="mb-0 {{ text_color }} font-bold fs-6">
-            <i class="fas fa-user-circle me-2"></i> {{ group.customer_name }}
-        </h5>
-        <p class="mb-0 {{ text_color | replace('800', '700') }} text-sm">
-            <i class="fas fa-phone-alt me-2"></i> {{ group.customer_phone }} 
-            <span class="d-none d-lg-inline-block text-gray-600 ms-3">| Primer registro: {{ group.created_at }}</span>
-        </p>
-    </div>
-    
-    {% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
-        <span class="badge bg-green-700 text-white font-bold px-3 py-2 rounded-full">CANCELADO</span>
-    {% endif %}
-</div>
-
-<!-- Cuerpo del Card: Números y Botón de Acción -->
-<div class="card-body p-4 d-flex flex-column justify-content-between">
-    
-    <!-- Total de Venta por Usuario (Solo Superusuario) -->
-    {% if current_user.is_authenticated and current_user.is_superuser() %}
-        <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm">
-            <p class="text-sm font-medium text-indigo-700 mb-1">Total de Venta ({{ group.numbers | length }} números):</p>
-            <p class="text-2xl font-extrabold text-indigo-800 mb-0">
-                {{ formatted_price }}
-            </p>
-            <p class="text-xs text-indigo-600 mt-1 mb-0">
-                <i class="fas fa-lock me-1"></i> Visible solo para Superusuario.
+    <!-- Encabezado del Card: Nombre y Teléfono -->
+    <div class="{{ header_base_class }} {{ header_bg_color }} {{ border_color }} d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0 {{ text_color }} font-bold fs-6">
+                <i class="fas fa-user-circle me-2"></i> {{ group.customer_name }}
+            </h5>
+            <p class="mb-0 {{ text_color | replace('800', '700') }} text-sm">
+                <i class="fas fa-phone-alt me-2"></i> {{ group.customer_phone }} 
+                <span class="d-none d-lg-inline-block text-gray-600 ms-3">| Primer registro: {{ group.created_at }}</span>
             </p>
         </div>
-    {% endif %}
-
-    <!-- Números en fila horizontal y wrapping -->
-    <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
-        <span class="text-sm font-medium {{ text_color }}">Números:</span>
-        {% for number in (group.numbers | sort) %}
-            <span class="font-extrabold rounded-md px-2 py-1 text-sm 
-                {% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
-                    bg-green-400 text-white
-                {% else %}
-                    bg-red-400 text-white
-                {% endif %}
-            ">{{ number }}</span>
-        {% endfor %}
-    </div>
-    
-    <!-- Botones de Acción: Cancelar y Editar/Liberar -->
-    <div class="mt-auto pt-3 border-top {{ border_color | replace('300', '200') }} d-flex flex-wrap gap-2">
         
-        <!-- Botón Cancelar (Solo Superusuario) -->
-        {% set show_cancel = current_user.is_authenticated and current_user.is_superuser() %}
-        
-        {% if show_cancel %}
-            {# Botón Cancelar - Ocupa la mitad del espacio disponible #}
-            <button onclick="confirmCancellation('{{ group.selection_ids | join(',') }}', '{{ group.customer_name }}', {{ group.is_canceled }})"
-                class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition 
-                {% if group.is_canceled == 1 %}
-                    btn-success disabled bg-green-500 text-white border-green-700 cursor-not-allowed
-                {% else %}
-                    btn-outline-success hover:bg-green-100
-                {% endif %}
-            ">
-                <i class="fas fa-ban me-1"></i> 
-                {{ 'CANCELADO' if group.is_canceled == 1 else 'Marcar Cancelado' }}
-            </button>
-
-            {# Botón Editar / Liberar - Ocupa la otra mitad del espacio disponible #}
-            <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
-                class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
-                <i class="fas fa-edit me-1"></i> Editar / Liberar
-            </button>
-        {% else %}
-            {# Si no es superusuario, solo muestra Editar/Liberar (ocupa 100%) #}
-            <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
-                class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
-                <i class="fas fa-edit me-1"></i> Editar / Liberar
-            </button>
+        {% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
+            <span class="badge bg-green-700 text-white font-bold px-3 py-2 rounded-full">CANCELADO</span>
         {% endif %}
     </div>
-    
-    <!-- NUEVO BOTÓN: WhatsApp (MEJORADO - Visible solo para Superusuario) -->
-    {% set first_digit = group.customer_phone | default('0') | string | slice(0, 1) %}
-    
-    {# SIMPLIFICACIÓN: Eliminamos la verificación de ['6', '7', '8'] para asegurar que se muestre #}
-    {# Solo revisamos que el teléfono tenga 8 dígitos (patrón CR) y que el usuario sea Superusuario #}
-    {% set show_wa = current_user.is_authenticated and current_user.is_superuser() and group.customer_phone | length == 8 %} 
 
-    {% if show_wa %}
-        {# Mensaje actualizado para incluir el total a pagar y AHORA LA FECHA DE LA RIFA #}
-        {% set wa_text = "¡Hola *%s*! Te confirmo tu selección de número(s) para la rifa *%s* (#%s). Tus números son: *%s*.\n\nEl total a pagar es de: *%s*.\nLa fecha del sorteo es: *%s*.\n\n_Para confirmar su compra, por favor enviar el comprobante de pago._"|format(group.customer_name, rifa.name, rifa.raffle_number, numbers_list, formatted_price, rifa.raffle_date) %}
+    <!-- Cuerpo del Card: Números y Botón de Acción -->
+    <div class="card-body p-4 d-flex flex-column justify-content-between">
         
-        <a href="https://wa.me/506{{ group.customer_phone }}?text={{ wa_text | urlencode }}"
-           target="_blank"
-           class="btn btn-sm w-100 mt-2 inline-flex items-center justify-content-center font-medium rounded-xl transition bg-green-600 text-white hover:bg-green-700"
-           title="Enviar mensaje de WhatsApp a {{ group.customer_name }} con números, total y fecha">
-            <i class="fab fa-whatsapp me-1"></i> Enviar Info por WhatsApp
-        </a>
-    {% endif %}
-</div>
+        <!-- Total de Venta por Usuario (Solo Superusuario) -->
+        {% if current_user.is_authenticated and current_user.is_superuser() %}
+            <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm">
+                <p class="text-sm font-medium text-indigo-700 mb-1">Total de Venta ({{ group.numbers | length }} números):</p>
+                <p class="text-2xl font-extrabold text-indigo-800 mb-0">
+                    {{ formatted_price }}
+                </p>
+                <p class="text-xs text-indigo-600 mt-1 mb-0">
+                    <i class="fas fa-lock me-1"></i> Visible solo para Superusuario.
+                </p>
+            </div>
+        {% endif %}
 
-</div>
+        <!-- Números en fila horizontal y wrapping -->
+        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+            <span class="text-sm font-medium {{ text_color }}">Números:</span>
+            {% for number in (group.numbers | sort) %}
+                <span class="font-extrabold rounded-md px-2 py-1 text-sm 
+                    {% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
+                        bg-green-400 text-white
+                    {% else %}
+                        bg-red-400 text-white
+                    {% endif %}
+                ">{{ number }}</span>
+            {% endfor %}
+        </div>
+        
+        <!-- Botones de Acción: Cancelar y Editar/Liberar -->
+        <div class="mt-auto pt-3 border-top {{ border_color | replace('300', '200') }} d-flex flex-wrap gap-2">
+            
+            <!-- Botón Cancelar (Solo Superusuario) -->
+            {% set show_cancel = current_user.is_authenticated and current_user.is_superuser() %}
+            
+            {% if show_cancel %}
+                {# Botón Cancelar - Ocupa la mitad del espacio disponible #}
+                <button onclick="confirmCancellation('{{ group.selection_ids | join(',') }}', '{{ group.customer_name }}', {{ group.is_canceled }})"
+                    class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition 
+                    {% if group.is_canceled == 1 %}
+                        btn-success disabled bg-green-500 text-white border-green-700 cursor-not-allowed
+                    {% else %}
+                        btn-outline-success hover:bg-green-100
+                    {% endif %}
+                ">
+                    <i class="fas fa-ban me-1"></i> 
+                    {{ 'CANCELADO' if group.is_canceled == 1 else 'Marcar Cancelado' }}
+                </button>
+
+                {# Botón Editar / Liberar - Ocupa la otra mitad del espacio disponible #}
+                <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
+                    class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
+                    <i class="fas fa-edit me-1"></i> Editar / Liberar
+                </button>
+            {% else %}
+                {# Si no es superusuario, solo muestra Editar/Liberar (ocupa 100%) #}
+                <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
+                    class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
+                    <i class="fas fa-edit me-1"></i> Editar / Liberar
+                </button>
+            {% endif %}
+        </div>
+        
+        <!-- NUEVO BOTÓN: WhatsApp (MEJORADO - Visible solo para Superusuario) -->
+        {% set first_digit = group.customer_phone | default('0') | string | slice(0, 1) %}
+        
+        {# SIMPLIFICACIÓN: Eliminamos la verificación de ['6', '7', '8'] para asegurar que se muestre #}
+        {# Solo revisamos que el teléfono tenga 8 dígitos (patrón CR) y que el usuario sea Superusuario #}
+        {% set show_wa = current_user.is_authenticated and current_user.is_superuser() and group.customer_phone | length == 8 %} 
+
+        {% if show_wa %}
+            {# Mensaje actualizado para incluir el total a pagar y AHORA LA FECHA DE LA RIFA #}
+            {% set wa_text = "¡Hola *%s*! Te confirmo tu selección de número(s) para la rifa *%s* (#%s). Tus números son: *%s*.\n\nEl total a pagar es de: *%s*.\nLa fecha del sorteo es: *%s*.\n\n_Para confirmar su compra, por favor enviar el comprobante de pago._"|format(group.customer_name, rifa.name, rifa.raffle_number, numbers_list, formatted_price, rifa.raffle_date) %}
+            
+            <a href="https://wa.me/506{{ group.customer_phone }}?text={{ wa_text | urlencode }}"
+               target="_blank"
+               class="btn btn-sm w-100 mt-2 inline-flex items-center justify-content-center font-medium rounded-xl transition bg-green-600 text-white hover:bg-green-700"
+               title="Enviar mensaje de WhatsApp a {{ group.customer_name }} con números, total y fecha">
+                <i class="fab fa-whatsapp me-1"></i> Enviar Info por WhatsApp
+            </a>
+        {% endif %}
+    </div>
+
+    </div>
 
 </div>
 {% endfor %}
+</div>
 
 </div>
 {% else %}
@@ -436,19 +462,20 @@ onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?
 {% endif %}
 <p class="text-gray-600"><i class="fas fa-tag me-2 text-indigo-500"></i> Precio por Número: <span class="text-xl font-extrabold text-green-600">₡{{ "%.2f"|format(rifa.price) }}</span></p>
 
-        {% if current_user.is_authenticated and current_user.is_superuser() %}
-            <div class="mt-3">
-                <a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}" class="btn btn-warning text-white font-medium rounded-xl hover:bg-yellow-600 transition">
-                    <i class="fas fa-edit me-2"></i> Editar Rifa (Admin)
-                </a>
-            </div>
-        {% endif %}
-    </div>
+    {% if current_user.is_authenticated and current_user.is_superuser() %}
+        <div class="mt-3">
+            <a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}" class="btn btn-warning text-white font-medium rounded-xl hover:bg-yellow-600 transition">
+                <i class="fas fa-edit me-2"></i> Editar Rifa (Admin)
+            </a>
+        </div>
+    {% endif %}
+</div>
+
 </div>
 
 <div class="col-12 col-lg-6">
-    <h3 class="text-xl font-bold text-gray-800 mb-3 border-bottom pb-1">Descripción:</h3>
-    <p class="text-gray-700 whitespace-pre-wrap">{{ rifa.detail }}</p>
+<h3 class="text-xl font-bold text-gray-800 mb-3 border-bottom pb-1">Descripción:</h3>
+<p class="text-gray-700 whitespace-pre-wrap">{{ rifa.detail }}</p>
 </div>
 
 </div>
@@ -477,34 +504,34 @@ onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?
 <input type="hidden" name="selected_numbers" id="modal_selected_numbers_input" value="">
 
 <div class="mb-3 p-3 bg-pastel-blue rounded-xl border border-blue-300">
-    <label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar:</label>
-    <span id="modal_selected_numbers_display" class="d-block text-lg font-extrabold text-blue-800">Ninguno</span>
+<label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar:</label>
+<span id="modal_selected_numbers_display" class="d-block text-lg font-extrabold text-blue-800">Ninguno</span>
 </div>
 
 <div class="space-y-3">
-    <div>
-        <label for="modal_customer_name" class="form-label text-sm font-medium text-gray-700">Nombre:</label>
-        <input type="text" name="customer_name" id="modal_customer_name" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
-    </div>
-    <div>
-        <label for="modal_customer_phone" class="form-label text-sm font-medium text-gray-700">Teléfono (8 dígitos):</label>
-        <input type="tel" name="customer_phone" id="modal_customer_phone" pattern="[0-9]{8}" maxlength="8" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
-    </div>
-    <div>
-        <label for="modal_selection_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
-        <div class="input-group mt-1">
-            <input type="password" name="selection_password" id="modal_selection_password" required minlength="4" class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
-            <button type="button" onclick="togglePasswordVisibility('modal_selection_password')" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
-                    style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
-                <i class="fas fa-eye-slash" id="toggle_modal_selection_password_icon"></i>
-            </button>
-        </div>
-        <p class="text-xs text-gray-500 mt-1">Necesaria para editar/eliminar la selección más tarde.</p>
-    </div>
+<div>
+<label for="modal_customer_name" class="form-label text-sm font-medium text-gray-700">Nombre:</label>
+<input type="text" name="customer_name" id="modal_customer_name" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+</div>
+<div>
+<label for="modal_customer_phone" class="form-label text-sm font-medium text-gray-700">Teléfono (8 dígitos):</label>
+<input type="tel" name="customer_phone" id="modal_customer_phone" pattern="[0-9]{8}" maxlength="8" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+</div>
+<div>
+<label for="modal_selection_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
+<div class="input-group mt-1">
+<input type="password" name="selection_password" id="modal_selection_password" required minlength="4" class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+<button type="button" onclick="togglePasswordVisibility('modal_selection_password')" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
+style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
+<i class="fas fa-eye-slash" id="toggle_modal_selection_password_icon"></i>
+</button>
+</div>
+<p class="text-xs text-gray-500 mt-1">Necesaria para editar/eliminar la selección más tarde.</p>
+</div>
 </div>
 
 <button type="submit" id="modal_submit_button" disabled class="mt-3 w-full btn text-lg font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-    Comprar Números Seleccionados
+Comprar Números Seleccionados
 </button>
 
 </form>
@@ -547,35 +574,37 @@ Verifica la información del cliente antes de proceder a editar o liberar.
 <input type="hidden" name="selection_ids" id="modal-selection-ids">
 
 <!-- Información del Cliente (READ-ONLY) -->
+
 <div class="p-3 bg-gray-50 rounded-lg mb-3">
-    <h6 class="text-sm font-bold text-gray-700 mb-2 border-bottom pb-1">Datos del Cliente:</h6>
-    <div class="mb-2">
-        <label class="form-label text-xs font-medium text-gray-600 mb-0">Nombre:</label>
-        <input type="text" id="customer_name_display" readonly class="form-control form-control-sm bg-white font-semibold border-0">
-    </div>
-    <div>
-        <label class="form-label text-xs font-medium text-gray-600 mb-0">Teléfono:</label>
-        <input type="text" id="customer_phone_display" readonly class="form-control form-control-sm bg-white font-semibold border-0">
-    </div>
+<h6 class="text-sm font-bold text-gray-700 mb-2 border-bottom pb-1">Datos del Cliente:</h6>
+<div class="mb-2">
+<label class="form-label text-xs font-medium text-gray-600 mb-0">Nombre:</label>
+<input type="text" id="customer_name_display" readonly class="form-control form-control-sm bg-white font-semibold border-0">
+</div>
+<div>
+<label class="form-label text-xs font-medium text-gray-600 mb-0">Teléfono:</label>
+<input type="text" id="customer_phone_display" readonly class="form-control form-control-sm bg-white font-semibold border-0">
+</div>
 </div>
 
 <!-- Contraseña para ACCIONES (Editar o Liberar) -->
+
 <div class="mb-3">
-    <label for="edit_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
-    <div class="input-group mt-1">
-        <input type="password" name="edit_password" id="edit_password" 
-               {% if not current_user.is_authenticated or not current_user.is_superuser() %}required{% endif %} 
-               class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
-        <button type="button" onclick="togglePasswordVisibility('edit_password')" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
-                style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
-            <i class="fas fa-eye-slash" id="toggle_edit_password_icon"></i>
-        </button>
-    </div>
-    {% if current_user.is_authenticated and current_user.is_superuser() %}
-        <p class="text-xs text-indigo-500 mt-1">Como Superusuario, la contraseña es opcional para la liberación/edición.</p>
-    {% else %}
-        <p class="text-xs text-gray-500 mt-1">Requerida para cualquier acción sobre esta selección.</p>
-    {% endif %}
+<label for="edit_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
+<div class="input-group mt-1">
+<input type="password" name="edit_password" id="edit_password"
+{% if not current_user.is_authenticated or not current_user.is_superuser() %}required{% endif %}
+class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
+<button type="button" onclick="togglePasswordVisibility('edit_password')" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
+style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
+<i class="fas fa-eye-slash" id="toggle_edit_password_icon"></i>
+</button>
+</div>
+{% if current_user.is_authenticated and current_user.is_superuser() %}
+<p class="text-xs text-indigo-500 mt-1">Como Superusuario, la contraseña es opcional para la liberación/edición.</p>
+{% else %}
+<p class="text-xs text-gray-500 mt-1">Requerida para cualquier acción sobre esta selección.</p>
+{% endif %}
 </div>
 
 </div>
@@ -589,10 +618,11 @@ onclick="document.getElementById('modal-action').value = 'edit_selection'">
 </button>
 
 <!-- Botón para Liberar -->
+
 <button type="submit" id="btn-delete-selection"
-        class="btn btn-danger rounded-xl text-base font-medium transition"
-        onclick="document.getElementById('modal-action').value = 'delete_selection'">
-    <i class="fas fa-trash-alt me-2"></i> Liberar Números
+class="btn btn-danger rounded-xl text-base font-medium transition"
+onclick="document.getElementById('modal-action').value = 'delete_selection'">
+<i class="fas fa-trash-alt me-2"></i> Liberar Números
 </button>
 
 </div>
@@ -667,14 +697,14 @@ Esta acción es irreversible y solo marca la selección como cancelada (Verde).
 <input type="hidden" name="selection_ids" id="modal-cancel-selection-ids">
 
 <div class="p-4 bg-gray-50 rounded-lg mb-3 border border-red-200">
-    <p class="text-base text-gray-700 mb-2">
-        ¿Confirma que el cliente 
-        <span id="modal-cancel-customer-name" class="font-extrabold text-red-800"></span> 
-        ha **CANCELADO** su selección?
-    </p>
-    <p class="text-sm text-red-600 font-medium">
-        Los números se marcarán como CANCELADOS en el sistema y aparecerán en **color verde sólido** en la lista de vendidos. No se liberan a la venta.
-    </p>
+<p class="text-base text-gray-700 mb-2">
+¿Confirma que el cliente
+<span id="modal-cancel-customer-name" class="font-extrabold text-red-800"></span>
+ha CANCELADO su selección?
+</p>
+<p class="text-sm text-red-600 font-medium">
+Los números se marcarán como CANCELADOS en el sistema y aparecerán en color verde sólido en la lista de vendidos. No se liberan a la venta.
+</p>
 </div>
 
 </div>

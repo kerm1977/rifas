@@ -40,16 +40,16 @@ nav {
 
 /* El menú por defecto está oculto en móvil y se desplaza */
 #nav-menu {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
+    /* Por defecto, está oculto o usa d-none. Lo corregimos para CSS/JS simple */
+    display: none; /* Empezamos oculto */
+    transition: all 0.3s ease-out;
     width: 100%; /* Ocupa todo el ancho en móvil */
 }
 
-/* Estado activo (abierto) en móvil */
+/* Estado activo (abierto) en móvil, activado por JS */
 #nav-menu.active {
-    max-height: 500px; /* Suficiente para mostrar todo el contenido */
-    transition: max-height 0.5s ease-in;
+    display: flex; /* Mostrar como columna en móvil */
+    flex-direction: column;
 }
 
 /* Enlaces en móvil (columna) */
@@ -68,8 +68,8 @@ nav {
 /* Media query para escritorio (lg: 1024px o más) */
 @media (min-width: 1024px) {
     #nav-menu {
-        max-height: none !important; /* Siempre visible */
-        display: flex;
+        display: flex !important; /* Siempre visible en desktop */
+        flex-direction: row !important; /* Volver a fila */
         width: auto;
         justify-content: flex-end; /* Alineación a la derecha */
     }
@@ -80,11 +80,8 @@ nav {
         display: flex; 
     }
     
-    /* CAMBIO CLAVE: Quitamos 'display: block' de la media query de escritorio. */
-    /* Dejamos que Tailwind maneje el display: flex y la alineación. */
-    /* Solo aplicamos padding, quitando width: 100% y display: block. */
+    /* Quitamos display: block y width: 100% para que se comporten en línea con flexbox */
     #nav-menu .nav-link, #nav-menu .btn {
-        /* Quitamos display: block y width: 100% para que se comporten en línea con flexbox */
         display: inline-flex; /* Usamos inline-flex para centrar verticalmente el contenido del enlace/botón */
         padding-top: 0.5rem;
         padding-bottom: 0.5rem;
@@ -92,4 +89,36 @@ nav {
         /* Aseguramos la alineación vertical de los iconos dentro del enlace/botón */
         align-items: center; 
     }
+}
+
+/* --- ESTILOS MOVIDOS DE detalle_rifa.html --- */
+/* CSS para el efecto de difuminado en el scroll */
+.scrolling-fade {
+    /* Permite que la sombra del scroll esté sobre el contenido */
+    position: relative; 
+    /* Oculta el scrollbar en Webkit (Chrome, Safari) */
+    overflow-y: scroll;
+}
+.scrolling-fade::-webkit-scrollbar {
+    display: none; /* Oculta el scrollbar */
+}
+.scrolling-fade {
+    -ms-overflow-style: none; /* Oculta el scrollbar en IE y Edge */
+    scrollbar-width: none; /* Oculta el scrollbar en Firefox */
+}
+
+.scrolling-fade::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    /* Gradiente de transparencia a blanco, creando el efecto de difuminado */
+    background: linear-gradient(to top, 
+        rgba(255, 255, 255, 1) 5%, /* Blanco sólido en la base */
+        rgba(255, 255, 255, 0.8) 15%, 
+        rgba(255, 255, 255, 0) 100%);
+    /* Ajustar la altura para que el difuminado sea visible */
+    height: 3rem; /* 48px */
+    pointer-events: none; /* Asegura que el gradiente no bloquee el clic */
 }

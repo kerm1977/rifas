@@ -203,5 +203,61 @@ function togglePasswordVisibility(fieldId) {
     }
 }
 
+// --- NUEVA FUNCIÓN: Filtrar tarjetas de números vendidos ---
+function filterCards() {
+    const searchInput = document.getElementById('search-input');
+    const filterText = searchInput.value.toLowerCase().trim();
+    const cardsContainer = document.getElementById('search-results-container');
+    
+    // Verificar si el contenedor existe
+    if (!cardsContainer) {
+        console.error('El contenedor de resultados de búsqueda no existe.');
+        return;
+    }
+
+    const cards = cardsContainer.querySelectorAll('.search-card');
+
+    cards.forEach(card => {
+        // Obtener los datos almacenados en los atributos data-
+        const name = card.dataset.name || '';
+        const phone = card.dataset.phone || '';
+        // Los números vienen como "01,05,12" (eliminando espacios)
+        const numbers = card.dataset.numbers || ''; 
+
+        let matches = false;
+
+        if (filterText.length > 0) {
+            // Verificar si el texto coincide con el nombre
+            if (name.includes(filterText)) {
+                matches = true;
+            }
+            // Verificar si el texto coincide con el teléfono
+            else if (phone.includes(filterText)) {
+                matches = true;
+            }
+            // Verificar si el texto coincide con un número de rifa exacto (ej. "05")
+            // Buscamos si el texto (ej. "05") está dentro de la lista de números ("01,05,12")
+            // También chequeamos por números de un solo dígito para que el buscador sea más flexible
+            else if (numbers.includes(filterText)) {
+                matches = true;
+            }
+        } else {
+            // Si el campo de búsqueda está vacío, mostrar todas las tarjetas
+            matches = true;
+        }
+
+        // Mostrar u ocultar la tarjeta
+        if (matches) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
 // Asegurar que el estado inicial se renderice
-document.addEventListener('DOMContentLoaded', updateSelectionState);
+document.addEventListener('DOMContentLoaded', () => {
+    updateSelectionState();
+    // Ejecutar filtro inicial si hay texto precargado (aunque no debería)
+    filterCards(); 
+});
