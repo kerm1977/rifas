@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-gray-900 min-h-screen text-white pt-10 pb-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <h1 class="text-4xl font-extrabold text-red-600 mb-8 tracking-tight">
+            Mi Biblioteca Personal de Videos
+        </h1>
+
+        <!-- Mensajes Flash (éxito, error, advertencia) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="p-3 mb-4 rounded-lg 
+                    {% if category == 'success' %}bg-green-600 text-white
+                    {% elif category == 'danger' %}bg-red-600 text-white
+                    {% else %}bg-yellow-500 text-gray-900{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Formulario de Escaneo Manual -->
+        <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-100">Escaneo de Videos</h2>
+            
+            <form action="{{ url_for('movies.start_scan') }}" method="POST" class="flex flex-col sm:flex-row gap-4">
+                
+                <!-- Selector de Directorio -->
+                <!-- El atributo 'required' asegura que el usuario seleccione una opción -->
+                <select name="scan_path" required class="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-red-500 focus:border-red-500">
+                    <option value="">-- Seleccionar Disco o Directorio --</option>
+                    {% for option in scan_options %}
+                        <option value="{{ option.path }}">{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Botón de Escaneo -->
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 flex-shrink-0">
+                    <i class="fas fa-search mr-2"></i> Escanear Directorio (Recursivo)
+                </button>
+            </form>
+            
+            <div class="mt-4 flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-700">
+                <p class="text-sm text-gray-400 mb-2 sm:mb-0">
+                    Total de videos en el catálogo: <strong>{{ videos|length }}</strong>
+                </p>
+                
+                <!-- Botón de Borrar Catálogo -->
+                <form action="{{ url_for('movies.clear_scan') }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas borrar TODO tu catálogo de videos escaneados? Esto solo elimina los enlaces, no los archivos.')">
+                    <button type="submit" class="text-xs text-red-400 hover:text-red-300 transition">
+                        <i class="fas fa-trash-alt mr-1"></i> Borrar Catálogo
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        
+        <!-- Cuadrícula de Videos -->
+        {% if videos %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            
+            {% for video in videos %}
+            <div class="movie-card bg-gray-800 rounded-lg shadow-xl overflow-hidden transform hover:scale-105 transition duration-300 ease-in-out cursor-pointer" 
+                 onclick="window.location.href = '#play-modal'; openModal('{{ video.filename_id }}', '{{ video.title }}', '{{ video.display_path }}')">
+                
+                <!-- Placeholder de Imagen (como si fuera la carátula) -->
+                <div class="relative pt-[150%] bg-gray-700 flex items-center justify-center">
+                    <!-- Icono grande de video -->
+                    <i class="fas fa-video fa-3x text-red-500 absolute inset-0 flex items-center justify-center opacity-70"></i>
+                    
+                    <!-- Simulación de Carátula con el título -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-900/80 to-transparent p-3 flex flex-col justify-end">
+                        <h2 class="text-sm font-bold truncate text-white">{{ video.title }}</h2>
+                        <span class="text-xs text-red-400 mt-1 truncate" title="Ruta: {{ video.display_path }}">
+                            <i class="fas fa-folder-open mr-1"></i> .../{{ video.display_path }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+        </div>
+        {% else %}
+        <div class="text-center py-20 bg-gray-800 rounded-lg">
+            <i class="fas fa-exclamation-triangle fa-3x text-yellow-500 mb-4"></i>
+            <p class="text-xl text-gray-300">
+                ¡Tu catálogo está vacío!
+            </p>
+            <p class="text-gray-400 mt-2">
+                Selecciona un disco o carpeta de la lista de arriba y haz clic en "Escanear Directorio" para buscar tus videos.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de Reproducción (Reproductor de Video) -->
+<div id="play-modal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[999]" onclick="closeModal()">
+    <div class="relative w-full max-w-5xl mx-4 my-8" onclick="event.stopPropagation()">
+        
+        <!-- Título del Video -->
+        <h3 id="video-modal-title" class="text-xl font-bold mb-1 text-white truncate"></h3>
+        <p id="video-modal-source" class="text-xs text-gray-400 mb-3 truncate"></p>
+        
+        <!-- Contenedor del Reproductor -->
+        <div class="relative w-full pt-[56.25%] bg-black rounded-lg overflow-hidden shadow-2xl">
+            <!-- El elemento 'video' se insertará y cargará aquí -->
+            <video id="video-player" controls preload="auto" class="absolute top-0 left-0 w-full h-full" poster="https://placehold.co/1280x720/111/fff?text=Cargando+Video">
+                Tu navegador no soporta la etiqueta de video.
+            </video>
+        </div>
+
+        <!-- Botón de Cerrar -->
+        <button onclick="closeModal()" class="absolute top-[-15px] right-[-15px] bg-red-600 hover:bg-red-700 text-white p-3 rounded-full shadow-lg transition">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    // JavaScript para manejar el modal de reproducción
+    const modal = document.getElementById('play-modal');
+    const videoPlayer = document.getElementById('video-player');
+    const modalTitle = document.getElementById('video-modal-title');
+    const modalSource = document.getElementById('video-modal-source');
+    let currentVideoFile = null;
+
+    function openModal(filenameId, title, displayPath) {
+        currentVideoFile = filenameId;
+        modalTitle.textContent = title;
+        modalSource.textContent = `Fuente: .../${displayPath}`;
+        
+        // CORRECCIÓN CLAVE: Se usa 'filename_id' para coincidir con la ruta de Flask.
+        // Esto también resuelve el BuildError anterior.
+        const videoUrl = `{{ url_for('movies.play_video', filename_id='PLACEHOLDER') }}`.replace('PLACEHOLDER', filenameId);
+        
+        // Establecer la fuente del video y recargar
+        videoPlayer.src = videoUrl;
+        videoPlayer.load();
+        
+        // Mostrar el modal
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Intentar iniciar la reproducción
+        videoPlayer.play().catch(error => {
+            console.warn("Autoplay bloqueado. El usuario debe hacer clic en 'Play'.", error);
+        });
+    }
+
+    function closeModal() {
+        // Pausar el video y resetear la fuente para detener el streaming
+        videoPlayer.pause();
+        videoPlayer.src = '';
+        videoPlayer.load(); // Descarga el recurso
+        
+        // Ocultar el modal
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        currentVideoFile = null;
+    }
+</script>
+{% endblock %}

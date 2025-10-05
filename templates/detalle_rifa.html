@@ -3,7 +3,7 @@
 {% block content %}
 
 <div class="container-fluid max-w-7xl mx-auto p-4 md:p-8">
-<h1 class="text-4xl font-extrabold text-gray-900 mb-4 text-center">{{ rifa.name }} (Rifa #{{ rifa.raffle_number }})</h1>
+<h1 class="text-3xl font-extrabold text-gray-900 mb-3 text-center">{{ rifa.name }} (Rifa #{{ rifa.raffle_number }})</h1>
 
 <!-- Botón para Abrir Modal de Info (Visible siempre) -->
 
@@ -363,13 +363,13 @@ Números Disponibles:
     {% set show_wa = current_user.is_authenticated and current_user.is_superuser() and group.customer_phone | length == 8 %} 
 
     {% if show_wa %}
-        {# Mensaje actualizado para incluir el total a pagar #}
-        {% set wa_text = "¡Hola *%s*! Te confirmo tu selección de número(s) para la rifa *%s* (#%s). Tus números son: *%s*.\n\nEl total a pagar es de: *%s*.\n\n_Para confirmar su compra, por favor enviar el comprobante de pago._"|format(group.customer_name, rifa.name, rifa.raffle_number, numbers_list, formatted_price) %}
+        {# Mensaje actualizado para incluir el total a pagar y AHORA LA FECHA DE LA RIFA #}
+        {% set wa_text = "¡Hola *%s*! Te confirmo tu selección de número(s) para la rifa *%s* (#%s). Tus números son: *%s*.\n\nEl total a pagar es de: *%s*.\nLa fecha del sorteo es: *%s*.\n\n_Para confirmar su compra, por favor enviar el comprobante de pago._"|format(group.customer_name, rifa.name, rifa.raffle_number, numbers_list, formatted_price, rifa.raffle_date) %}
         
         <a href="https://wa.me/506{{ group.customer_phone }}?text={{ wa_text | urlencode }}"
            target="_blank"
            class="btn btn-sm w-100 mt-2 inline-flex items-center justify-content-center font-medium rounded-xl transition bg-green-600 text-white hover:bg-green-700"
-           title="Enviar mensaje de WhatsApp a {{ group.customer_name }} con números y total">
+           title="Enviar mensaje de WhatsApp a {{ group.customer_name }} con números, total y fecha">
             <i class="fab fa-whatsapp me-1"></i> Enviar Info por WhatsApp
         </a>
     {% endif %}

@@ -3,6 +3,9 @@ from flask import Flask, redirect # Importamos redirect aquí
 from rifas import bp as rifas_bp, init_db, login_manager, UPLOAD_FOLDER
 from pathlib import Path
 
+# 1. IMPORTAR LA FUNCIÓN DE INICIALIZACIÓN DE LA DB DE VIDEOS
+from movies import bp as movies_bp, init_movie_db 
+
 def create_app():
     """Crea y configura la aplicación Flask."""
     app = Flask(__name__)
@@ -11,7 +14,7 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'un-secreto-muy-seguro-CR129x7848n')
     
     # Configuración de la base de datos y uploads
-    # NOTA: Para PythonAnywhere, asegúrate de que 'rifas.sqlite' se cree en el directorio raíz del proyecto (/home/kenth1977/rifas/)
+    # NOTA: Para PythonAnywhere, asegúrate de que 'rifas.sqlite' se cree en el directorio raíz del proyecto (/home/kenth1977/rifas/)\
     app.config['DATABASE'] = os.path.join(app.root_path, 'rifas.sqlite')
     app.config['UPLOAD_FOLDER'] = Path(app.root_path) / UPLOAD_FOLDER
     
@@ -22,12 +25,16 @@ def create_app():
     # Inicializar la DB y crear el superusuario
     with app.app_context():
         init_db()
+        # 2. LLAMADA CLAVE: Inicializa la tabla 'scanned_videos'
+        init_movie_db() 
 
     # Inicializar Flask-Login
     login_manager.init_app(app)
 
-    # Registrar el Blueprint
+    # Registrar Blueprints
     app.register_blueprint(rifas_bp)
+    # 3. REGISTRAR EL BLUEPRINT DE PELÍCULAS
+    app.register_blueprint(movies_bp)
 
     # Redireccionar la raíz a la lista de rifas
     @app.route('/')
