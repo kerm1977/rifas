@@ -207,7 +207,7 @@ function togglePasswordVisibility(fieldId) {
     }
 }
 
-// --- NUEVA FUNCIÓN: Filtrar tarjetas de números vendidos ---
+// --- FUNCIÓN MODIFICADA: Filtrar tarjetas de números vendidos ---
 function filterCards() {
     const searchInput = document.getElementById('search-input');
     const filterText = searchInput.value.toLowerCase().trim();
@@ -225,7 +225,9 @@ function filterCards() {
         // Obtener los datos almacenados en los atributos data-
         const name = card.dataset.name || '';
         const phone = card.dataset.phone || '';
-        // Los números vienen como "01,05,12" (eliminando espacios)
+        // El campo payment (pago) ya no se usa para buscar, se ignora:
+        // const payment = card.dataset.payment || ''; 
+        // Los números vienen como "010512" (eliminando espacios)
         const numbers = card.dataset.numbers || ''; 
 
         let matches = false;
@@ -239,9 +241,13 @@ function filterCards() {
             else if (phone.includes(filterText)) {
                 matches = true;
             }
+            // ELIMINAMOS BÚSQUEDA POR MÉTODO DE PAGO
+            /*
+            else if (payment.includes(filterText)) {
+                matches = true;
+            }
+            */
             // Verificar si el texto coincide con un número de rifa exacto (ej. "05")
-            // Buscamos si el texto (ej. "05") está dentro de la lista de números ("01,05,12")
-            // También chequeamos por números de un solo dígito para que el buscador sea más flexible
             else if (numbers.includes(filterText)) {
                 matches = true;
             }

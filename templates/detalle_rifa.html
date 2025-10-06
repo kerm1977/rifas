@@ -44,8 +44,6 @@ Número Ganador: {{ winning_number }}
 <p class="text-gray-800 mb-0 ps-3">
 <i class="fas fa-user me-1 text-yellow-700"></i> Cliente: <span class="font-extrabold">{{ winner_info.customer_name }}</span>
 
-
-
 <i class="fas fa-phone me-1 text-yellow-700"></i> Teléfono: {{ winner_info.customer_phone }}
 </p>
 </li>
@@ -102,7 +100,7 @@ Vuelva a sortear o anuncie el suplente.
 {# Inicializar la entrada en el diccionario si no existe #}
 {% if customer_key not in grouped_selections %}
 {# Definición del nuevo grupo en una línea limpia para evitar errores de sintaxis #}
-{% set new_group = {'customer_name': selection.customer_name, 'customer_phone': selection.customer_phone, 'created_at': selection.created_at, 'numbers': [], 'selection_ids': [], 'is_canceled': selection.is_canceled} %}
+{% set new_group = {'customer_name': selection.customer_name, 'customer_phone': selection.customer_phone, 'created_at': selection.created_at, 'numbers': [], 'selection_ids': [], 'is_canceled': selection.is_canceled, 'payment_method': selection.payment_method, 'sinpe_name': selection.sinpe_name, 'sinpe_phone': selection.sinpe_phone} %}
 {% set _ = grouped_selections.update({customer_key: new_group}) %}
 {% endif %}
 
@@ -144,6 +142,11 @@ d-none d-lg-block p-4 bg-white rounded-xl border border-indigo-100">
 <label for="customer_phone" class="form-label text-sm font-medium text-gray-700">Teléfono (8 dígitos):</label>
 <input type="tel" name="customer_phone" id="customer_phone" pattern="[0-9]{8}" maxlength="8" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
 </div>
+
+{# SECCIÓN ELIMINADA: MÉTODO DE PAGO DEL CLIENTE #}
+{# Eliminado: <div class="pt-2 border-top border-gray-200 space-y-3">... #}
+{# Eliminado: <div id="sinpe_fields_desktop" class="space-y-3 pt-2 d-none">... #}
+
 <div>
 <label for="selection_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
 <div class="input-group mt-1">
@@ -268,7 +271,7 @@ min-w-[40px] max-w-[10%] flex-shrink-0 flex-grow
 <input type="text"
 id="search-input"
 class="form-control p-3 border-gray-300 rounded-r-xl focus:border-indigo-500 focus:ring-indigo-500 shadow-sm"
-placeholder="Buscar por Número, Nombre o Teléfono del cliente..."
+placeholder="Buscar por Número, Nombre o Teléfono..."
 oninput="filterCards()">
 </div>
 </div>
@@ -307,6 +310,7 @@ oninput="filterCards()">
 <div class="col search-card" 
      data-name="{{ group.customer_name | lower }}" 
      data-phone="{{ group.customer_phone }}" 
+     data-payment="{{ group.payment_method | lower }}" 
      data-numbers="{{ numbers_list | replace(' ', '') | replace(',', '') }}">
     <div class="{{ card_base_class }} {{ bg_color }} {{ border_color }}">
 
@@ -337,10 +341,28 @@ oninput="filterCards()">
                 <p class="text-2xl font-extrabold text-indigo-800 mb-0">
                     {{ formatted_price }}
                 </p>
-                <p class="text-xs text-indigo-600 mt-1 mb-0">
-                    <i class="fas fa-lock me-1"></i> Visible solo para Superusuario.
+            </div>
+            
+            <!-- INFORMACIÓN DE PAGO DE LA RIFA (AHORA MUESTRA EL SINPE DEL DUEÑO DE LA RIFA) -->
+            {% if rifa.sinpe_phone_default %}
+            <div class="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg shadow-sm">
+                <p class="text-sm font-bold text-green-800 mb-1">
+                    <i class="fas fa-mobile-alt me-1 text-green-600"></i> Sinpe Rifa: 
+                    <span class="font-extrabold">{{ rifa.sinpe_phone_default }}</span>
+                </p>
+                <p class="text-xs text-green-700 mb-0 ps-4">
+                    <i class="fas fa-id-card me-1"></i> Nombre: {{ rifa.sinpe_name_default or 'N/A' }}
                 </p>
             </div>
+            {% else %}
+            <!-- Si no hay sinpe en la rifa, mostramos el método de pago por defecto (Efectivo/Otro) -->
+            <div class="mb-3 p-3 bg-gray-100 border border-gray-200 rounded-lg shadow-sm">
+                <p class="text-sm font-bold text-gray-800 mb-1">
+                    <i class="fas fa-credit-card me-1 text-indigo-500"></i> Método Rifa: 
+                    <span class="font-extrabold">{{ rifa.payment_method or 'Efectivo/Cuenta' }}</span>
+                </p>
+            </div>
+            {% endif %}
         {% endif %}
 
         <!-- Números en fila horizontal y wrapping -->
@@ -480,6 +502,24 @@ onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?
             </a>
         </div>
     {% endif %}
+    
+    <!-- SINPE DE LA RIFA (Dueño) -->
+    {% if rifa.sinpe_phone_default %}
+    <div class="p-3 bg-green-50 border border-green-300 rounded-lg shadow-sm">
+        <h4 class="text-lg font-bold text-green-800 mb-2">
+            <i class="fas fa-mobile-alt me-1"></i> Sinpe Móvil de la Rifa
+        </h4>
+        <p class="text-gray-700 mb-1">
+            <span class="font-semibold">Teléfono:</span> {{ rifa.sinpe_phone_default }}
+        </p>
+        <p class="text-gray-700 mb-0">
+            <span class="font-semibold">Nombre:</span> {{ rifa.sinpe_name_default or 'No especificado' }}
+        </p>
+        <p class="text-xs text-green-600 mt-1 mb-0">
+            Este es el Sinpe al que se debe realizar el pago.
+        </p>
+    </div>
+    {% endif %}
 </div>
 
 </div>
@@ -528,6 +568,11 @@ onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?
 <label for="modal_customer_phone" class="form-label text-sm font-medium text-gray-700">Teléfono (8 dígitos):</label>
 <input type="tel" name="customer_phone" id="modal_customer_phone" pattern="[0-9]{8}" maxlength="8" required class="form-control rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3">
 </div>
+
+{# SECCIÓN ELIMINADA: MÉTODO DE PAGO DEL CLIENTE (Móvil) #}
+{# Eliminado: <div class="pt-2 border-top border-gray-200 space-y-3">... #}
+{# Eliminado: <div id="sinpe_fields_mobile" class="space-y-3 pt-2 d-none">... #}
+
 <div>
 <label for="modal_selection_password" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
 <div class="input-group mt-1">
@@ -738,5 +783,20 @@ class="btn btn-success rounded-xl text-base font-medium transition hover:bg-gree
 </div>
 
 </div>
+
+<!-- Lógica JS Adicional para campos de pago del cliente -->
+<script>
+    // Función para mostrar/ocultar campos de Sinpe del cliente (AHORA INACTIVA EN HTML)
+    function toggleSinpeFields(selectId, fieldsId) {
+        // Esta función ya no es necesaria en el HTML pero se mantiene vacía para evitar errores JS
+        console.log("toggleSinpeFields ha sido eliminado del HTML.");
+        // Se elimina la lógica de DOM del JS al final de este archivo.
+    }
+
+    // Inicializar el estado de los campos de Sinpe al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+        // Ya no es necesario inicializar el estado del método de pago aquí
+    });
+</script>
 
 {% endblock %}

@@ -94,7 +94,7 @@ def init_db():
     """)
 
     # 2. Crear tabla de Rifa
-    # MODIFICACIÓN: Agregamos winning_numbers
+    # MODIFICACIÓN: Agregamos winning_numbers Y CAMPOS DE PAGO POR DEFECTO PARA LA RIFA
     db.execute("""
         CREATE TABLE IF NOT EXISTS raffle (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,12 +106,14 @@ def init_db():
             raffle_date DATE NOT NULL,
             raffle_time TEXT,
             image_filename TEXT NOT NULL,
-            winning_numbers TEXT DEFAULT '[]' -- NUEVO: Almacenará un JSON string de números ganadores
+            winning_numbers TEXT DEFAULT '[]', -- Almacenará un JSON string de números ganadores
+            sinpe_name_default TEXT, -- NUEVO: Nombre del Sinpe de la RIFA
+            sinpe_phone_default TEXT -- NUEVO: Teléfono del Sinpe de la RIFA
         );
     """)
 
     # 3. Crear tabla de Selecciones (Números vendidos)
-    # MODIFICACIÓN: Agregamos la columna is_canceled
+    # MODIFICACIÓN: Agregamos la columna is_canceled y las de PAGO DEL CLIENTE
     db.execute("""
         CREATE TABLE IF NOT EXISTS selection (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -122,13 +124,16 @@ def init_db():
             selection_password_hash TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             is_canceled BOOLEAN DEFAULT 0, -- NUEVO: 0 = No cancelado, 1 = Cancelado
+            payment_method TEXT DEFAULT 'No especificado', -- NUEVO: Forma de pago del cliente
+            sinpe_name TEXT, -- NUEVO: Nombre del Sinpe del cliente (si eligió Sinpe)
+            sinpe_phone TEXT, -- NUEVO: Teléfono del Sinpe del cliente (si eligió Sinpe)
             FOREIGN KEY (raffle_id) REFERENCES raffle(id),
             UNIQUE (raffle_id, number)
         );
     """)
     db.commit()
 
-    # Si la tabla ya existe y la columna falta, la agregamos (MIGRACIÓN simple)
+    # MIGRACIÓN: Asegurar que las nuevas columnas existan
     try:
         db.execute("ALTER TABLE selection ADD COLUMN is_canceled BOOLEAN DEFAULT 0")
         db.commit()
@@ -136,11 +141,27 @@ def init_db():
         pass # Columna ya existe o error no relacionado
         
     try:
-        # MIGARCIÓN para agregar la columna winning_numbers a raffle si falta
         db.execute("ALTER TABLE raffle ADD COLUMN winning_numbers TEXT DEFAULT '[]'")
         db.commit()
     except sqlite3.OperationalError:
         pass # Columna ya existe o error no relacionado
+        
+    try:
+        # MIGRACIÓN: Nuevos campos de pago para la tabla raffle
+        db.execute("ALTER TABLE raffle ADD COLUMN sinpe_name_default TEXT")
+        db.execute("ALTER TABLE raffle ADD COLUMN sinpe_phone_default TEXT")
+        db.commit()
+    except sqlite3.OperationalError:
+        pass # Columna ya existe
+        
+    try:
+        # MIGRACIÓN: Nuevos campos de pago para la tabla selection
+        db.execute("ALTER TABLE selection ADD COLUMN payment_method TEXT DEFAULT 'No especificado'")
+        db.execute("ALTER TABLE selection ADD COLUMN sinpe_name TEXT")
+        db.execute("ALTER TABLE selection ADD COLUMN sinpe_phone TEXT")
+        db.commit()
+    except sqlite3.OperationalError:
+        pass # Columna ya existe
 
     # 4. Crear Superusuario permanente
     superuser_email = 'kenth1977@gmail.com'
@@ -210,9 +231,9 @@ def register():
 
     if request.method == 'POST':
         data = request.form
-        email = data.get('email')
-        password = data.get('password')
-        confirm_password = data.get('confirm_password')
+        email = data.form.get('email')
+        password = data.form.get('password')
+        confirm_password = data.form.get('confirm_password')
 
         # 1. Autogenerar contraseña si falta (Min 8 chars)
         if not password or len(password) < 8:
@@ -278,8 +299,8 @@ def logout():
 def ver_rifas():
     """Vista pública para ver las rifas disponibles."""
     db = get_db()
-    # MODIFICACIÓN: Traemos la columna winning_numbers
-    rifas_data = db.execute('SELECT * FROM raffle ORDER BY raffle_date DESC').fetchall()
+    # MODIFICACIÓN: Traemos las nuevas columnas de Sinpe por defecto
+    rifas_data = db.execute('SELECT *, sinpe_name_default, sinpe_phone_default FROM raffle ORDER BY raffle_date DESC').fetchall()
     db.close()
     
     # Procesar los números ganadores (JSON string a lista de Python)
@@ -306,6 +327,11 @@ def crear_rifa():
     if request.method == 'POST':
         data = request.form
         image_file = request.files.get('image')
+        
+        # Recolección de nuevos campos
+        payment_method = data.get('payment_method')
+        sinpe_name_default = data.get('sinpe_name_default') if payment_method == 'Sinpe' else None
+        sinpe_phone_default = data.get('sinpe_phone_default') if payment_method == 'Sinpe' else None
 
         # 1. Validación de imagen
         if not image_file or image_file.filename == '' or not allowed_file(image_file.filename):
@@ -330,8 +356,8 @@ def crear_rifa():
         try:
             db = get_db()
             db.execute("""
-                INSERT INTO raffle (raffle_number, name, price, prize, detail, raffle_date, raffle_time, image_filename, winning_numbers)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO raffle (raffle_number, name, price, prize, detail, raffle_date, raffle_time, image_filename, winning_numbers, sinpe_name_default, sinpe_phone_default)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 data.get('raffle_number'),
                 data.get('name'),
@@ -341,7 +367,9 @@ def crear_rifa():
                 data.get('raffle_date'),
                 data.get('raffle_time') or None, # Hora opcional
                 filename,
-                '[]' # Inicializar sin ganadores
+                '[]', # Inicializar sin ganadores
+                sinpe_name_default,
+                sinpe_phone_default
             ))
             db.commit()
             db.close()
@@ -371,7 +399,8 @@ def editar_rifa(raffle_id):
         return redirect(url_for('rifas.ver_rifas'))
 
     db = get_db()
-    rifa = db.execute('SELECT * FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
+    # MODIFICACIÓN: Traemos las nuevas columnas de Sinpe por defecto
+    rifa = db.execute('SELECT *, sinpe_name_default, sinpe_phone_default FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
 
     if rifa is None:
         db.close()
@@ -385,6 +414,11 @@ def editar_rifa(raffle_id):
         image_file = request.files.get('image')
         new_filename = rifa_dict['image_filename']
         filepath = None
+        
+        # Recolección de nuevos campos
+        payment_method = data.get('payment_method')
+        sinpe_name_default = data.get('sinpe_name_default') if payment_method == 'Sinpe' else None
+        sinpe_phone_default = data.get('sinpe_phone_default') if payment_method == 'Sinpe' else None
 
         try:
             # 1. Manejo de la nueva imagen
@@ -407,7 +441,8 @@ def editar_rifa(raffle_id):
             db.execute("""
                 UPDATE raffle SET
                     raffle_number = ?, name = ?, price = ?, prize = ?, detail = ?, 
-                    raffle_date = ?, raffle_time = ?, image_filename = ?
+                    raffle_date = ?, raffle_time = ?, image_filename = ?,
+                    sinpe_name_default = ?, sinpe_phone_default = ?
                 WHERE id = ?
             """, (
                 data.get('raffle_number'),
@@ -418,6 +453,8 @@ def editar_rifa(raffle_id):
                 data.get('raffle_date'),
                 data.get('raffle_time') or None,
                 new_filename,
+                sinpe_name_default,
+                sinpe_phone_default,
                 raffle_id
             ))
             db.commit()
@@ -573,11 +610,15 @@ def generar_reporte_txt(raffle_id):
         return redirect(url_for('rifas.ver_rifas'))
     
     # 2. Obtener todas las selecciones
+    # Mantenemos las columnas para generar el reporte con los datos que ya existen en la DB
     selections = db.execute("""
         SELECT 
             customer_name, 
             number, 
-            is_canceled 
+            is_canceled,
+            payment_method,
+            sinpe_name,
+            sinpe_phone
         FROM selection 
         WHERE raffle_id = ? 
         ORDER BY number ASC
@@ -590,34 +631,40 @@ def generar_reporte_txt(raffle_id):
         reporte = []
         
         # Encabezado
-        reporte.append("=" * 70)
+        reporte.append("=" * 100)
         reporte.append(f"REPORTE DE RIFA: {raffle_data['name']}")
         reporte.append(f"Rifa #: {raffle_data['raffle_number']}")
         reporte.append(f"Premio: {raffle_data['prize']}")
         reporte.append(f"Fecha del Sorteo: {raffle_data['raffle_date']} {raffle_data['raffle_time'] or ''}")
         reporte.append(f"Precio por número: \u20a1{raffle_data['price']:.2f}")
-        reporte.append("=" * 70)
+        reporte.append("=" * 100)
         reporte.append("")
         
         # Encabezados de la tabla
-        reporte.append(f"{'NÚMERO':<10}{'CLIENTE':<40}{'ESTADO':<20}")
-        reporte.append("-" * 70)
+        # MODIFICACIÓN: Eliminamos "PAGO" y "SINPE RECIBE" del encabezado si ya no se usan
+        reporte.append(f"{'NÚMERO':<10}{'CLIENTE':<60}{'ESTADO':<15}")
+        reporte.append("-" * 100)
         
         # Contenido de la tabla
         for row in selections:
             number = row['number']
             customer_name = row['customer_name']
+            payment_method = row['payment_method']
+            sinpe_name = row['sinpe_name'] or '' 
+            sinpe_phone = row['sinpe_phone'] or ''
             is_canceled = row['is_canceled']
             
             estado = 'CANCELADO' if is_canceled else 'PENDIENTE / ACTIVO'
+            # Mantenemos la lógica para incluir info de pago en el nombre si existe, aunque ya no se pide
+            # En este caso, solo mostramos el nombre del cliente y el estado
             
             # Formato de la fila (alineación de texto)
-            line = f"{number:<10}{customer_name[:38]:<40}{estado:<20}" # Truncamos el nombre si es muy largo
+            line = f"{number:<10}{customer_name[:58]:<60}{estado:<15}"
             reporte.append(line)
             
-        reporte.append("-" * 70)
+        reporte.append("-" * 100)
         reporte.append(f"Total de números vendidos/ocupados: {len(selections)}")
-        reporte.append("=" * 70)
+        reporte.append("=" * 100)
         
         txt_content = "\n".join(reporte)
         
@@ -641,7 +688,8 @@ def generar_reporte_txt(raffle_id):
 def detalle_rifa(raffle_id):
     """Vista para detalle de rifa y selección/compra de números."""
     db = get_db()
-    rifa = db.execute('SELECT * FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
+    # MODIFICACIÓN: Traemos las nuevas columnas de Sinpe por defecto
+    rifa = db.execute('SELECT *, sinpe_name_default, sinpe_phone_default FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
     
     if rifa is None:
         db.close()
@@ -656,8 +704,8 @@ def detalle_rifa(raffle_id):
         rifa_dict['winning_numbers'] = []
         
     # Obtener todas las selecciones (vendidas/reservadas)
-    # MODIFICACIÓN: Incluimos la columna 'is_canceled' en el SELECT
-    selections = db.execute('SELECT id, raffle_id, number, customer_name, customer_phone, selection_password_hash, created_at, is_canceled FROM selection WHERE raffle_id = ?', (raffle_id,)).fetchall()
+    # MODIFICACIÓN: Incluimos las nuevas columnas de PAGO DEL CLIENTE
+    selections = db.execute('SELECT id, raffle_id, number, customer_name, customer_phone, selection_password_hash, created_at, is_canceled, payment_method, sinpe_name, sinpe_phone FROM selection WHERE raffle_id = ?', (raffle_id,)).fetchall()
     
     # Mapeo de números seleccionados
     sold_numbers = {s['number']: dict(s) for s in selections}
@@ -677,9 +725,18 @@ def detalle_rifa(raffle_id):
             password = request.form.get('selection_password')
             numbers_str = request.form.get('selected_numbers') # "01, 15, 99"
             
-            if not name or not phone or not password or not numbers_str:
-                flash('Todos los campos son obligatorios para la selección.', 'danger')
+            # ELIMINAMOS RECOLECCIÓN DE CAMPOS DE PAGO DEL CLIENTE DEL FORMULARIO
+            payment_method = 'Efectivo/Otro' # Valor por defecto
+            sinpe_name = None # Valor por defecto
+            sinpe_phone = None # Valor por defecto
+            
+            # Validación simple de campos obligatorios
+            if not name or not phone or not password or not numbers_str: # Eliminamos validación de payment_method
+                flash('Todos los campos de cliente y contraseña son obligatorios para la selección.', 'danger')
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+            
+            # ELIMINAMOS VALIDACIÓN ESPECÍFICA DE SINPE
+            # if payment_method == 'Sinpe' and (not sinpe_name or not sinpe_phone): ...
 
             selected_numbers = [n.strip() for n in numbers_str.split(',')]
             password_hash = generate_password_hash(password)
@@ -692,10 +749,11 @@ def detalle_rifa(raffle_id):
                     existing = db.execute('SELECT * FROM selection WHERE raffle_id = ? AND number = ?', (raffle_id, number)).fetchone()
                     if existing is None:
                         # Asegurar que insertamos is_canceled = 0 por defecto
+                        # MODIFICACIÓN: AÑADIR CAMPOS DE PAGO CON VALORES POR DEFECTO
                         db.execute("""
-                            INSERT INTO selection (raffle_id, number, customer_name, customer_phone, selection_password_hash, is_canceled)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        """, (raffle_id, number, name, phone, password_hash, 0))
+                            INSERT INTO selection (raffle_id, number, customer_name, customer_phone, selection_password_hash, is_canceled, payment_method, sinpe_name, sinpe_phone)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (raffle_id, number, name, phone, password_hash, 0, payment_method, sinpe_name, sinpe_phone))
                         newly_selected.append(number)
                 
                 db.commit()
@@ -749,6 +807,7 @@ def detalle_rifa(raffle_id):
             
             try: # Agregamos un try/finally aquí también
                 if action == 'delete_selection':
+                    # MODIFICACIÓN: Agregamos las nuevas columnas a la sentencia DELETE
                     db.execute(f'DELETE FROM selection WHERE id IN ({placeholders})', selection_ids)
                     db.commit()
                     flash(f'Los números han sido liberados y eliminados.', 'success')

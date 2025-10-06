@@ -39,6 +39,15 @@
                             <p><i class="fas fa-clock text-indigo-500 me-2"></i> <strong>Hora:</strong> {{ rifa.raffle_time }}</p>
                         {% endif %}
                         <p><i class="fas fa-trophy text-yellow-500 me-2"></i> <strong>Premio:</strong> {{ rifa.prize }}</p>
+                        
+                        <!-- NUEVO: Información de Sinpe de la Rifa -->
+                        {% if rifa.sinpe_phone_default %}
+                            <div class="pt-2 border-top border-gray-100">
+                                <p class="mb-0 text-sm font-semibold text-green-700">
+                                    <i class="fas fa-mobile-alt me-1"></i> Sinpe: {{ rifa.sinpe_phone_default }} ({{ rifa.sinpe_name_default or 'Sin Nombre' }})
+                                </p>
+                            </div>
+                        {% endif %}
                     </div>
 
                     <!-- SECCIÓN GANADOR(ES) -->
@@ -215,9 +224,9 @@
 
             <!-- El formulario POSTeará a la ruta de eliminación. Dejamos el action vacío para que el JS lo establezca. -->
             <form method="POST" id="delete-raffle-form" action="">
+                <input type="hidden" name="raffle_id" id="raffle-to-delete-id">
+                
                 <div class="modal-body pt-2">
-                    <input type="hidden" name="raffle_id" id="raffle-to-delete-id">
-                    
                     <ul class="space-y-3 p-0 list-unstyled">
                         <li class="d-flex align-items-start">
                             <i class="fas fa-times-circle text-red-600 me-3 mt-1 flex-shrink-0"></i>

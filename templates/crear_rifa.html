@@ -50,6 +50,39 @@
                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
             </div>
 
+            <!-- NUEVA SECCIÓN: FORMA DE PAGO DE LA RIFA -->
+            <div class="form-group border border-gray-200 p-4 rounded-xl space-y-3">
+                <h3 class="text-lg font-semibold text-gray-800 border-bottom pb-2 mb-3">Información de Pago de la Rifa</h3>
+                <label for="payment_method_rifa" class="form-label text-sm font-medium text-gray-700">Forma de Pago Principal</label>
+                <select id="payment_method_rifa" name="payment_method" required onchange="toggleRifaSinpeFields('payment_method_rifa', 'sinpe_rifa_fields')"
+                        class="form-select px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="Sinpe" selected>Sinpe Móvil</option>
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Cuenta">Transferencia Bancaria (Cuenta)</option>
+                </select>
+
+                <!-- CAMPOS CONDICIONALES SINPE -->
+                <div id="sinpe_rifa_fields" class="space-y-3 pt-2">
+                    <div>
+                        <!-- CAMBIO: max 40 y oninput Title Case -->
+                        <label for="sinpe_name_default" class="form-label text-sm font-medium text-gray-700">Nombre del Sinpe (Máx 40 letras)</label>
+                        <input type="text" name="sinpe_name_default" id="sinpe_name_default" required 
+                               pattern="^[A-Za-zñÑáéíóúÁÉÍÓÚ\s]{1,40}$" maxlength="40" title="Máximo 40 letras y espacios"
+                               oninput="this.value=this.value.replace(/(\b[a-z])/g, (match) => match.toUpperCase())"
+                               class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <p class="text-xs text-gray-500 mt-1">Nombre de la persona o entidad que recibe el pago.</p>
+                    </div>
+                    <div>
+                        <label for="sinpe_phone_default" class="form-label text-sm font-medium text-gray-700">Teléfono Sinpe (8 dígitos)</label>
+                        <input type="text" name="sinpe_phone_default" id="sinpe_phone_default" required
+                               pattern="[0-9]{8}" maxlength="8" minlength="8"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                               class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <p class="text-xs text-gray-500 mt-1">Solo 8 dígitos numéricos.</p>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Fecha y Hora (Grid de Bootstrap) -->
             <div class="row g-3">
                 <div class="col-12 col-md-6">
@@ -74,4 +107,32 @@
         </form>
     </div>
 </div>
+
+<script>
+    // Lógica para mostrar/ocultar campos de Sinpe en la creación de rifas
+    function toggleRifaSinpeFields(selectId, fieldsId) {
+        const select = document.getElementById(selectId);
+        const fields = document.getElementById(fieldsId);
+        const sinpeNameInput = document.getElementById('sinpe_name_default');
+        const sinpePhoneInput = document.getElementById('sinpe_phone_default');
+
+        if (select.value === 'Sinpe') {
+            fields.classList.remove('d-none');
+            // Hacer que los campos de Sinpe sean requeridos
+            sinpeNameInput.setAttribute('required', 'required');
+            sinpePhoneInput.setAttribute('required', 'required');
+        } else {
+            fields.classList.add('d-none');
+            // Remover el atributo required si no es Sinpe
+            sinpeNameInput.removeAttribute('required');
+            sinpePhoneInput.removeAttribute('required');
+        }
+    }
+
+    // Inicializar el estado al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+        // Asegurar que la función se ejecuta con el valor inicial
+        toggleRifaSinpeFields('payment_method_rifa', 'sinpe_rifa_fields');
+    });
+</script>
 {% endblock %}
