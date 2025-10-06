@@ -312,14 +312,14 @@ def logout():
 def ver_rifas():
     """Vista pública para ver las rifas disponibles."""
     db = get_db()
-    # CORRECCIÓN: Se modifica la consulta para que cuente los números vendidos (no cancelados)
-    # de cada rifa usando un LEFT JOIN y GROUP BY para mayor eficiencia.
+    # CORRECCIÓN DE INCONSISTENCIA: Se modifica la consulta para contar TODOS los números ocupados
+    # (vendidos y cancelados) para que el contador de "Disponibles" sea coherente con la página de detalle.
     rifas_data = db.execute("""
         SELECT 
             r.*, 
             COUNT(s.id) as total_sold_numbers
         FROM raffle r
-        LEFT JOIN selection s ON r.id = s.raffle_id AND s.is_canceled = 0
+        LEFT JOIN selection s ON r.id = s.raffle_id
         GROUP BY r.id
         ORDER BY r.raffle_date DESC
     """).fetchall()
@@ -489,7 +489,7 @@ def editar_rifa(raffle_id):
                 os.remove(filepath)
         except Exception as e:
             flash(f'Error al actualizar la rifa: {e}', 'danger')
-            if os.path.exists(filepath):
+            if filepath and os.path.exists(filepath):
                 os.remove(filepath)
         finally:
             db.close()
@@ -736,10 +736,6 @@ def detalle_rifa(raffle_id):
     if request.method == 'POST':
         action = request.form.get('action')
         
-        # Las acciones que requieren IDs de selección usan esta lógica común
-        selection_ids_str = request.form.get('selection_ids') 
-        password_check = request.form.get('edit_password')
-        
         # --- Lógica de Agregar Selección ---
         if action == 'add_selection':
             name = request.form.get('customer_name')
@@ -793,8 +789,37 @@ def detalle_rifa(raffle_id):
                 flash(f'Error al guardar la selección: {e}', 'danger')
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
-        # --- Lógica para Editar/Eliminar/Cancelar ---
-        elif action in ['edit_selection', 'delete_selection', 'cancel_selection']:
+        # --- CORRECCIÓN: Lógica de Cancelación Separada ---
+        elif action == 'cancel_selection':
+            # La cancelación es una acción solo para superusuarios y no requiere contraseña.
+            if not current_user.is_authenticated or not current_user.is_superuser():
+                flash('Acción denegada. Solo superusuarios pueden cancelar selecciones.', 'danger')
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+            selection_ids_str = request.form.get('selection_ids')
+            if not selection_ids_str:
+                flash('Error: No se proporcionaron IDs de selección para cancelar.', 'danger')
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+            selection_ids = tuple(selection_ids_str.split(','))
+            placeholders = ','.join('?' * len(selection_ids))
+
+            try:
+                db.execute(f'UPDATE selection SET is_canceled = 1 WHERE id IN ({placeholders})', selection_ids)
+                db.commit()
+                flash('La selección ha sido marcada como CANCELADA. El card se ha puesto verde.', 'success')
+            except Exception as e:
+                db.rollback()
+                flash(f'Error al cancelar la selección: {e}', 'danger')
+            finally:
+                db.close()
+            
+            return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+        # --- Lógica para Editar y Eliminar (ahora separada de cancelar) ---
+        elif action in ['edit_selection', 'delete_selection']:
+            selection_ids_str = request.form.get('selection_ids')
+            password_check = request.form.get('edit_password')
             
             if not selection_ids_str:
                 flash('Error: No se proporcionaron IDs de selección.', 'danger')
@@ -829,23 +854,11 @@ def detalle_rifa(raffle_id):
             # --- Proceso de Acciones ---
             placeholders = ','.join('?' * len(selection_ids))
             
-            try: # Agregamos un try/finally aquí también
+            try:
                 if action == 'delete_selection':
-                    # MODIFICACIÓN: Agregamos las nuevas columnas a la sentencia DELETE
                     db.execute(f'DELETE FROM selection WHERE id IN ({placeholders})', selection_ids)
                     db.commit()
-                    flash(f'Los números han sido liberados y eliminados.', 'success')
-                
-                elif action == 'cancel_selection':
-                    # MODIFICACIÓN: Solo superusuarios pueden cancelar, ya revisado arriba.
-                    if not current_user.is_superuser():
-                        flash('Acción denegada. Solo superusuarios pueden cancelar selecciones.', 'danger')
-                        return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-                        
-                    # Marcamos como cancelado (1)
-                    db.execute(f'UPDATE selection SET is_canceled = 1 WHERE id IN ({placeholders})', selection_ids)
-                    db.commit()
-                    flash('La selección ha sido marcada como CANCELADA. El card se ha puesto verde.', 'success')
+                    flash('Los números han sido liberados y eliminados.', 'success')
                 
                 elif action == 'edit_selection':
                     flash('Funcionalidad de Edición de Cliente no implementada aún.', 'info')
@@ -936,3 +949,4 @@ def utility_processor():
             db.close()
         
     return dict(get_image_url=get_image_url, now_year=now_year, get_winner_info=get_winner_info)
+

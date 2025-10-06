@@ -196,6 +196,25 @@ if (numbersGrid) {
 // --- FUNCIONES LLAMADAS DESDE EL HTML (onclick) ---
 // Estas funciones se adjuntan a 'window' para ser accesibles desde los atributos onclick en el HTML.
 
+/**
+ * CORRECCIÓN: Se crea una función específica para manejar el envío del formulario de edición/liberación.
+ * Esto hace el código en el HTML más limpio y la lógica más fácil de depurar.
+ * @param {string} action El valor para el input 'action' ('edit_selection' o 'delete_selection').
+ */
+window.submitEditForm = function(action) {
+    const actionInput = document.getElementById('modal-action');
+    const form = document.getElementById('edit-selection-form');
+
+    if (actionInput && form) {
+        actionInput.value = action;
+        form.submit();
+    } else {
+        // Mensaje de error para el usuario si algo falla.
+        alert('Error: No se pudo encontrar el formulario de edición. Contacte al soporte.');
+        console.error('Error crítico: No se encontraron los elementos #modal-action o #edit-selection-form.');
+    }
+}
+
 window.togglePasswordVisibility = function(id) {
     const input = document.getElementById(id);
     const icon = document.getElementById(`toggle_${id}_icon`);
@@ -258,7 +277,9 @@ window.openEditModal = function(selectionIds, numbersList, customerName, custome
 }
 
 window.confirmCancellation = function(selectionIds, customerName, isCanceled) {
-    if (isCanceled === 1) {
+    // La comprobación `if (isCanceled)` previene que se intente cancelar una selección que ya lo está.
+    // El valor `isCanceled` viene de Jinja como 1 (true) o 0 (false).
+    if (isCanceled) {
         console.log(`La selección para "${customerName}" ya está marcada como CANCELADA.`); 
         return;
     }

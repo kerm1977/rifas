@@ -1,99 +1,17 @@
-/* Definición de colores pastel personalizados para Tailwind */
+/* --------------------------------------------------------------------------------
+   ESTILOS ESPECÍFICOS PARA DETALLE DE RIFA
+   Movidos desde detalle_rifa.html y base.css para una separación limpia.
+-------------------------------------------------------------------------------- */
+
+/* --- Colores Pastel (Si no están en un archivo base de Tailwind) --- */
+/* Si estos ya están en base.css, se pueden eliminar de aquí. Los dejo por si acaso. */
 .bg-pastel-green { background-color: #d1e7dd; } /* Success light */
-.text-green-800 { color: #0a3622; }
-.border-green-700 { border-color: #0a3622; }
-
 .bg-pastel-red { background-color: #f8d7da; } /* Danger light */
-.text-red-800 { color: #58151c; }
-.border-red-700 { border-color: #58151c; }
+.bg-pastel-blue { background-color: #cff4fc; } /* Info light */
 
-.bg-pastel-blue { background-color: #cff4fc; } /* Info light (Celeste) */
-.text-blue-800 { color: #055160; }
-.border-blue-700 { border-color: #055160; }
-.border-blue-300 { border-color: #a0d4eb; } /* Nueva clase agregada para el borde claro de la selección */
 
-/* Aseguramos que el cuerpo ocupe el alto completo y usamos Flexbox para el layout principal */
-html, body {
-    height: 100%;
-}
-body {
-    font-family: 'Inter', sans-serif;
-    background-color: #f4f7f9;
-}
+/* --- CSS para el efecto de difuminado en el scroll (scrolling-fade) --- */
 
-/* Utilidad para simular el min-h-full y centrado de formularios en las vistas de auth */
-.min-vh-full-center {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding-top: 1.5rem; /* pt-3 */
-    padding-bottom: 1.5rem; /* pb-3 */
-}
-
-/* --- ESTILO ADICIONAL PARA NAV: EFECTO BLUR --- */
-nav {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* Para compatibilidad con Safari */
-}
-/* --- CSS Nativo para NAV RESPONSIVE --- */
-
-/* El menú por defecto está oculto en móvil y se desplaza */
-#nav-menu {
-    /* Por defecto, está oculto o usa d-none. Lo corregimos para CSS/JS simple */
-    display: none; /* Empezamos oculto */
-    transition: all 0.3s ease-out;
-    width: 100%; /* Ocupa todo el ancho en móvil */
-}
-
-/* Estado activo (abierto) en móvil, activado por JS */
-#nav-menu.active {
-    display: flex; /* Mostrar como columna en móvil */
-    flex-direction: column;
-}
-
-/* Enlaces en móvil (columna) */
-#nav-menu .nav-item {
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-/* Enlaces y botones deben ser display: block en móvil para ocupar todo el ancho */
-#nav-menu .nav-link, #nav-menu .btn {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-}
-
-/* Media query para escritorio (lg: 1024px o más) */
-@media (min-width: 1024px) {
-    #nav-menu {
-        display: flex !important; /* Siempre visible en desktop */
-        flex-direction: row !important; /* Volver a fila */
-        width: auto;
-        justify-content: flex-end; /* Alineación a la derecha */
-    }
-    #nav-menu .nav-item {
-        border-top: none;
-        margin-left: 1rem; /* ms-lg-3/ms-lg-4 */
-        /* Aseguramos que el LI se comporte como un elemento flex para alinear los nav-links */
-        display: flex; 
-    }
-    
-    /* Quitamos display: block y width: 100% para que se comporten en línea con flexbox */
-    #nav-menu .nav-link, #nav-menu .btn {
-        display: inline-flex; /* Usamos inline-flex para centrar verticalmente el contenido del enlace/botón */
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-        text-align: center;
-        /* Aseguramos la alineación vertical de los iconos dentro del enlace/botón */
-        align-items: center; 
-    }
-}
-
-/* --- ESTILOS MOVIDOS DE detalle_rifa.html --- */
-/* CSS para el efecto de difuminado en el scroll */
 .scrolling-fade {
     /* Permite que la sombra del scroll esté sobre el contenido */
     position: relative; 
@@ -108,6 +26,7 @@ nav {
     scrollbar-width: none; /* Oculta el scrollbar en Firefox */
 }
 
+/* El pseudo-elemento que crea el efecto de difuminado en la parte inferior */
 .scrolling-fade::after {
     content: "";
     position: absolute;
@@ -124,10 +43,11 @@ nav {
     pointer-events: none; /* Asegura que el gradiente no bloquee el clic */
 }
 
-/* NUEVO CSS: Forzar Modal de Selección a Pantalla Completa en Móvil (hasta 991px) */
-/* El breakpoint 'lg' de Bootstrap es 992px. Aquí forzamos todo abajo de eso. */
+
+/* --- CSS para forzar Modal de Selección a Pantalla Completa en Móvil (hasta 991px) --- */
+/* MEJORA: Este bloque ya no es necesario al unificar los formularios, pero se mantiene por si se reutiliza el modal. */
 @media (max-width: 991.98px) {
-    /* Seleccionamos específicamente el modal de selección */
+    /* Seleccionamos específicamente el modal de selección (si existiera) */
     #selection-modal-bs .modal-dialog {
         /* Fuerza la ocupación de toda la pantalla en móvil */
         width: 100vw !important;

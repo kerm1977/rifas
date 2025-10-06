@@ -70,3 +70,25 @@
         overflow-y: auto;
     }
 }
+
+
+/* --- Estilo de Resaltado para Tarjetas Actualizadas --- */
+/* Esta animación crea un pulso de color para indicar qué tarjeta fue modificada. */
+@keyframes highlight-pulse {
+  0% {
+    background-color: rgba(74, 222, 128, 0.5); /* Verde semi-transparente */
+    box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.5);
+  }
+  70% {
+    background-color: rgba(74, 222, 128, 0.1);
+    box-shadow: 0 0 0 8px rgba(74, 222, 128, 0);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+.highlight-update {
+  animation: highlight-pulse 1.5s ease-out;
+}

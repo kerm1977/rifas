@@ -54,13 +54,12 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
-        <p>&copy; <span id="year">{{ now_year() }}</span> - Sistema de Rifas CR. Todos los derechos reservados.</p>
-    </footer>
+   {% include "footer.html" %}
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+
 
 </body>
 </html>

@@ -396,7 +396,8 @@ bg-red-400 text-white
     
     {% if show_cancel %}
         {# Botón Cancelar - Ocupa la mitad del espacio disponible #}
-        <button onclick="confirmCancellation('{{ group.selection_ids | join(',') }}', '{{ group.customer_name }}', {{ group.is_canceled }})"
+        {# MEJORA: Se pasa el 'card_id' a la función JS para poder resaltarlo después de la recarga. #}
+        <button onclick="confirmCancellation({{ (group.selection_ids | join(',')) | tojson }}, {{ group.customer_name | tojson }}, {{ group.is_canceled }}, '{{ card_id }}')"
             class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition 
             {% if group.is_canceled == 1 %}
                 btn-success disabled bg-green-500 text-white border-green-700 cursor-not-allowed
@@ -409,13 +410,15 @@ bg-red-400 text-white
         </button>
 
         {# Botón Editar / Liberar - Ocupa la otra mitad del espacio disponible #}
-        <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
+        {# MEJORA: Se pasa el 'card_id' a la función JS. #}
+        <button onclick="openEditModal({{ (group.selection_ids | join(',')) | tojson }}, {{ ((group.numbers | sort) | join(', ')) | tojson }}, {{ group.customer_name | tojson }}, {{ group.customer_phone | tojson }}, '{{ card_id }}')"
             class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
             <i class="fas fa-edit me-1"></i> Editar / Liberar
         </button>
     {% else %}
         {# Si no es superusuario, solo muestra Editar/Liberar (ocupa 100%) #}
-        <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
+        {# MEJORA: Se pasa el 'card_id' a la función JS. #}
+        <button onclick="openEditModal({{ (group.selection_ids | join(',')) | tojson }}, {{ ((group.numbers | sort) | join(', ')) | tojson }}, {{ group.customer_name | tojson }}, {{ group.customer_phone | tojson }}, '{{ card_id }}')"
             class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
             <i class="fas fa-edit me-1"></i> Editar / Liberar
         </button>
@@ -669,9 +672,8 @@ Verifica la información del cliente antes de proceder a editar o liberar.
 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
 
-<form method="POST" action="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}">
+<form method="POST" action="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}" id="edit-selection-form">
 <div class="modal-body pt-0">
-<!-- Se utiliza 'view_selection' como acción para diferenciar, aunque el backend solo implemente delete/edit -->
 <input type="hidden" name="action" id="modal-action" value="delete_selection">
 <input type="hidden" name="selection_ids" id="modal-selection-ids">
 
@@ -712,18 +714,16 @@ style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 
 </div>
 
 <div class="modal-footer d-grid gap-2 d-sm-flex justify-content-sm-end">
-<!-- Botón para Editar (Si el backend lo implementa, puede cambiar 'action' a 'edit_selection') -->
-<button type="button" id="btn-edit-selection"
+<!-- CORRECCIÓN: Se cambia el onclick para usar una función JS más limpia -->
+<button type="button"
 class="btn btn-warning rounded-xl text-base font-medium transition"
-onclick="document.getElementById('modal-action').value = 'edit_selection'">
+onclick="submitEditForm('edit_selection')">
 <i class="fas fa-edit me-2"></i> Editar Cliente
 </button>
 
-<!-- Botón para Liberar -->
-
-<button type="button" id="btn-delete-selection"
+<button type="button"
 class="btn btn-danger rounded-xl text-base font-medium transition"
-onclick="document.getElementById('modal-action').value = 'delete_selection'">
+onclick="submitEditForm('delete_selection')">
 <i class="fas fa-trash-alt me-2"></i> Liberar Números
 </button>
 
@@ -852,3 +852,4 @@ style="display: none;">
 <script src="{{ url_for('static', filename='js/detalle_rifa.js') }}"></script>
 
 {% endblock %}
+
