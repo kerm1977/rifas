@@ -181,12 +181,10 @@ Comprar Números Seleccionados
 <span class="d-flex align-items-center w-full sm:w-1/2 md:w-auto sm:justify-center md:justify-start">
 <span class="w-4 h-4 rounded-circle bg-pastel-red me-2 border border-red-700"></span> Vendido/Ocupado
 </span>
-<!-- NUEVO ESTADO: Cancelado -->
-{% if current_user.is_authenticated and current_user.is_superuser() %}
+<!-- NUEVO ESTADO: Cancelado (Visible para todos en verde, no solo Admin) -->
 <span class="d-flex align-items-center w-full sm:w-1/2 md:w-auto sm:justify-center md:justify-start">
-<span class="w-4 h-4 rounded-circle bg-green-500 me-2 border border-green-700"></span> <span class="text-green-700">Cancelado (Admin)</span>
+<span class="w-4 h-4 rounded-circle bg-green-500 me-2 border border-green-700"></span> <span class="text-green-700">Cancelado</span>
 </span>
-{% endif %}
 </div>
 
 <!-- INFORMACIÓN DE NÚMEROS DISPONIBLES (Corregido para reflejar el conteo real) -->
@@ -216,19 +214,20 @@ class="number-button text-center py-2 rounded-lg font-bold transition-all durati
 min-w-[40px] max-w-[10%] flex-shrink-0 flex-grow
 
         {% if is_sold %}
+            {# Vendido y Activo (Rojo Pastel) #}
             bg-pastel-red text-red-800 cursor-not-allowed hover:shadow-inner
-        {% elif is_canceled and current_user.is_authenticated and current_user.is_superuser() %}
-            {# Muestra Cancelado en un color que indique disponibilidad (verde sólido) solo al superusuario #}
+        {% elif is_canceled %}
+            {# Cancelado (Verde Sólido - Visible para todos) #}
             bg-green-500 text-white cursor-not-allowed hover:shadow-inner 
         {% else %}
-            {# Disponible #}
+            {# Disponible (Verde Pastel) #}
             bg-pastel-green text-green-800 hover:bg-green-300 hover:shadow-md
         {% endif %}"
-{% if is_sold or (is_canceled and current_user.is_authenticated and current_user.is_superuser()) %}disabled{% endif %}>
+{% if is_sold or is_canceled %}disabled{% endif %}>
 
 {{ number_str }}
 
-{% if is_canceled and current_user.is_authenticated and current_user.is_superuser() %}
+{% if is_canceled %}
     <i class="fas fa-ban text-sm ms-1 d-none d-sm-inline"></i>
 {% endif %}
 
@@ -241,6 +240,18 @@ min-w-[40px] max-w-[10%] flex-shrink-0 flex-grow
 </div>
 
 </div>
+
+<!-- INICIO: Botón de Reporte (SOLO SUPERUSUARIO) -->
+{% if current_user.is_authenticated and current_user.is_superuser() %}
+<div class="mt-5 text-center">
+    <!-- CORRECCIÓN: Apuntamos a la nueva función generar_reporte_txt -->
+    <a href="{{ url_for('rifas.generar_reporte_txt', raffle_id=rifa.id) }}" 
+       class="btn bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-xl font-semibold transition shadow-md hover:shadow-lg">
+        <i class="fas fa-file-alt me-2"></i> Generar Reporte TXT (Superusuario)
+    </a>
+</div>
+{% endif %}
+<!-- FIN: Botón de Reporte -->
 
 <!-- INICIO: Diseño de Tarjetas para Números Vendidos -->
 
@@ -282,8 +293,8 @@ oninput="filterCards()">
 {% set border_color = 'border-red-300' %}
 {% set bg_color = 'bg-pastel-red/50' %}
 
-{% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
-{# Card Cancelado (Verde) #}
+{% if group.is_canceled == 1 %}
+{# Card Cancelado (Verde, visible para todos) #}
 {% set text_color = 'text-green-800' %}
 {% set border_color = 'border-green-300' %}
 {% set bg_color = 'bg-pastel-green/50' %}
@@ -311,7 +322,7 @@ oninput="filterCards()">
             </p>
         </div>
         
-        {% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
+        {% if group.is_canceled == 1 %}
             <span class="badge bg-green-700 text-white font-bold px-3 py-2 rounded-full">CANCELADO</span>
         {% endif %}
     </div>
@@ -337,7 +348,7 @@ oninput="filterCards()">
             <span class="text-sm font-medium {{ text_color }}">Números:</span>
             {% for number in (group.numbers | sort) %}
                 <span class="font-extrabold rounded-md px-2 py-1 text-sm 
-                    {% if group.is_canceled == 1 and current_user.is_authenticated and current_user.is_superuser() %}
+                    {% if group.is_canceled == 1 %}
                         bg-green-400 text-white
                     {% else %}
                         bg-red-400 text-white

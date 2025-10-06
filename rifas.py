@@ -4,10 +4,13 @@ import secrets
 import json # Necesario para manejar la lista de ganadores en JSON
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, Response
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 from PIL import Image
+
+# Eliminamos la importación y simulación de FPDF para evitar errores.
+# La generación de archivos es ahora en texto plano (.txt).
 
 # --- Configuración y Blueprint ---
 
@@ -427,7 +430,7 @@ def editar_rifa(raffle_id):
                 os.remove(filepath)
         except Exception as e:
             flash(f'Error al actualizar la rifa: {e}', 'danger')
-            if filepath and os.path.exists(filepath):
+            if os.path.exists(filepath):
                 os.remove(filepath)
         finally:
             db.close()
@@ -550,6 +553,86 @@ def anunciar_ganador(raffle_id):
         db.close()
         
     return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+# --- RUTA NUEVA: GENERAR TXT (Reemplaza PDF) ---
+@bp.route('/rifas/reporte-txt/<int:raffle_id>')
+@login_required
+def generar_reporte_txt(raffle_id):
+    """Superuser: Genera un archivo de texto (.txt) con el listado de números vendidos, nombre del cliente y estado de cancelación."""
+    if not current_user.is_superuser():
+        flash('Acceso denegado. Solo superusuarios pueden generar reportes.', 'danger')
+        return redirect(url_for('rifas.ver_rifas'))
+
+    db = get_db()
+    
+    # 1. Obtener información de la rifa
+    raffle_data = db.execute('SELECT * FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
+    if not raffle_data:
+        db.close()
+        flash('Rifa no encontrada para generar el reporte.', 'danger')
+        return redirect(url_for('rifas.ver_rifas'))
+    
+    # 2. Obtener todas las selecciones
+    selections = db.execute("""
+        SELECT 
+            customer_name, 
+            number, 
+            is_canceled 
+        FROM selection 
+        WHERE raffle_id = ? 
+        ORDER BY number ASC
+    """, (raffle_id,)).fetchall()
+    
+    db.close()
+
+    # --- Generación del contenido TXT ---
+    try:
+        reporte = []
+        
+        # Encabezado
+        reporte.append("=" * 70)
+        reporte.append(f"REPORTE DE RIFA: {raffle_data['name']}")
+        reporte.append(f"Rifa #: {raffle_data['raffle_number']}")
+        reporte.append(f"Premio: {raffle_data['prize']}")
+        reporte.append(f"Fecha del Sorteo: {raffle_data['raffle_date']} {raffle_data['raffle_time'] or ''}")
+        reporte.append(f"Precio por número: \u20a1{raffle_data['price']:.2f}")
+        reporte.append("=" * 70)
+        reporte.append("")
+        
+        # Encabezados de la tabla
+        reporte.append(f"{'NÚMERO':<10}{'CLIENTE':<40}{'ESTADO':<20}")
+        reporte.append("-" * 70)
+        
+        # Contenido de la tabla
+        for row in selections:
+            number = row['number']
+            customer_name = row['customer_name']
+            is_canceled = row['is_canceled']
+            
+            estado = 'CANCELADO' if is_canceled else 'PENDIENTE / ACTIVO'
+            
+            # Formato de la fila (alineación de texto)
+            line = f"{number:<10}{customer_name[:38]:<40}{estado:<20}" # Truncamos el nombre si es muy largo
+            reporte.append(line)
+            
+        reporte.append("-" * 70)
+        reporte.append(f"Total de números vendidos/ocupados: {len(selections)}")
+        reporte.append("=" * 70)
+        
+        txt_content = "\n".join(reporte)
+        
+        # Retornar la respuesta HTTP como TXT
+        filename = f"reporte_rifa_{raffle_data['raffle_number']}.txt"
+        response = Response(
+            txt_content, 
+            mimetype='text/plain',
+            headers={'Content-Disposition': f'attachment;filename={filename}'}
+        )
+        return response
+
+    except Exception as e:
+        flash(f'Error al generar el archivo de texto: {e}', 'danger')
+        return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
 
 # --- Rutas de Detalle y Selección de Números (Mantenidas) ---

@@ -27,19 +27,22 @@ function updateButtonStyles(button, isSelectedNow, isSold) {
     button.classList.remove('bg-pastel-blue', 'text-blue-800', 'bg-pastel-green', 'text-green-800');
     
     // Obtener el estado de cancelación del botón
-    // Nota: La clase 'bg-green-500' es usada para el estado 'Cancelado' por el Superusuario en Jinja
-    const isCanceled = button.classList.contains('bg-green-500') && button.dataset.sold === 'true'; 
+    // Usamos el dataset 'data-canceled' que es inyectado por Jinja.
+    const isCanceled = button.dataset.canceled === 'true'; 
 
-    if (isSold) {
-         // Si está vendido y cancelado (verde sólido)
+    if (isSold || isCanceled) {
+         // Si está vendido (rojo pastel) o cancelado (verde sólido)
          if (isCanceled && !isSelectedNow) {
+            // ESTADO CANCELADO (Verde sólido, visible para todos)
             button.classList.add('bg-green-500', 'text-white', 'cursor-not-allowed', 'hover:shadow-inner');
             button.disabled = true;
-         } else {
+         } else if (isSold && !isSelectedNow) {
             // Estilo de Vendido (rojo pastel)
             button.classList.add('bg-pastel-red', 'text-red-800', 'cursor-not-allowed', 'hover:shadow-inner');
             button.disabled = true;
          }
+         // Si está vendido o cancelado y ademas seleccionado (solo ocurre si hay un error o un número cancelado se selecciona)
+         // No se hace nada, ya que el atributo 'disabled' en el HTML debería prevenir el clic.
     } else if (isSelectedNow) {
         button.classList.add('bg-pastel-blue', 'text-blue-800'); // Azul Pastel: Seleccionado
         button.disabled = false;
@@ -101,6 +104,7 @@ numbersGrid.addEventListener('click', (e) => {
     const number = button.dataset.number;
     const isSold = button.dataset.sold === 'true';
 
+    // Si está vendido (rojo pastel) o cancelado (verde sólido), no se puede seleccionar
     if (isSold) return;
 
     const index = selectedNumbers.indexOf(number);
