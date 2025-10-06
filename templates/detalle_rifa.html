@@ -1,10 +1,13 @@
 {% extends "base.html" %}
 
+{# CORRECCIÓN: Se revierte el nombre del archivo CSS a 'detalle_rifa.css' #}
+{% block head_links %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/detalle_rifa.css') }}">
+{% endblock %}
+
 {% block content %}
-{# ELIMINACIÓN DE ESTILOS EN LÍNEA: El CSS de 'scrolling-fade' se movió a base.css #}
 
 <div class="container-fluid max-w-7xl mx-auto p-4 md:p-8">
-{# CAMBIO: Se usa text-2xl en móvil y md:text-4xl en escritorio para reducir el título #}
 <h1 class="text-2xl md:text-4xl font-extrabold text-gray-900 mb-3 text-center">{{ rifa.name }} (Rifa #{{ rifa.raffle_number }})</h1>
 
 <!-- Botón para Abrir Modal de Info (Visible siempre) -->
@@ -37,6 +40,7 @@ text-white bg-indigo-600 hover:bg-indigo-700 transition transform hover:scale-10
 
 {% if winner_info and 'status' not in winner_info %}
 {# Caso: Ganador Activo (is_canceled = 0) - Formato vertical mejorado #}
+
 <li class="bg-yellow-100 p-3 rounded-lg border border-yellow-300">
 <p class="font-bold text-lg text-yellow-900 mb-1">
 Número Ganador: {{ winning_number }}
@@ -45,6 +49,7 @@ Número Ganador: {{ winning_number }}
 <i class="fas fa-user me-1 text-yellow-700"></i> Cliente: <span class="font-extrabold">{{ winner_info.customer_name }}</span>
 
 <i class="fas fa-phone me-1 text-yellow-700"></i> Teléfono: {{ winner_info.customer_phone }}
+
 </p>
 </li>
 {% else %}
@@ -129,7 +134,8 @@ d-none d-lg-block p-4 bg-white rounded-xl border border-indigo-100">
 <input type="hidden" name="selected_numbers" id="selected_numbers_input" value="">
 
 <div class="mb-3 p-3 bg-pastel-blue rounded-xl border border-blue-300">
-<label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar:</label>
+<label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar: <span id="desktop_total_amount" class="font-extrabold text-blue-900 ms-2"></span></label>
+<!-- La etiqueta `span` mostrará los números seleccionados en celeste -->
 <span id="selected_numbers_display" class="d-block text-lg font-extrabold text-blue-800">Ninguno</span>
 </div>
 
@@ -160,8 +166,11 @@ style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 
 </div>
 </div>
 
-<button type="submit" id="submit_button" disabled class="mt-3 w-full btn text-lg font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-Comprar Números Seleccionados
+{# BOTÓN DE ESCRITORIO - SIEMPRE VISIBLE, DESHABILITADO POR JS HASTA SELECCIÓN #}
+<button type="submit" id="submit_button" disabled
+class="mt-3 w-full btn text-lg font-medium text-white transition-all duration-300 bg-indigo-600 hover:bg-indigo-700
+disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-content-center">
+<i class="fas fa-hand-pointer me-2"></i> Seleccione Números
 </button>
 
 </form>
@@ -181,7 +190,7 @@ Comprar Números Seleccionados
 <span class="d-flex align-items-center w-full sm:w-1/2 md:w-auto sm:justify-center md:justify-start">
 <span class="w-4 h-4 rounded-circle bg-pastel-blue me-2 border border-blue-700"></span> Seleccionado
 </span>
-<span class="d-flex align-items-center w-full sm:w-1/2 md:w-auto sm:justify-center md:justify-start">
+<span class="d-flex align-items-center w-full sm:w-1/2 md:w-w-auto sm:justify-center md:justify-start">
 <span class="w-4 h-4 rounded-circle bg-pastel-red me-2 border border-red-700"></span> Vendido/Ocupado
 </span>
 <!-- NUEVO ESTADO: Cancelado (Visible para todos en verde, no solo Admin) -->
@@ -215,23 +224,24 @@ data-number="{{ number_str }}"
 data-sold="{{ 'true' if is_sold or is_canceled else 'false' }}"
 class="number-button text-center py-2 rounded-lg font-bold transition-all duration-150
 min-w-[40px] max-w-[10%] flex-shrink-0 flex-grow
+border 
+{% if is_sold %}
+{# Vendido y Activo (Rojo Pastel) #}
+bg-pastel-red text-red-800 cursor-not-allowed hover:shadow-inner border-red-700
+{% elif is_canceled %}
+{# Cancelado (Verde Sólido) #}
+bg-green-500 text-white cursor-not-allowed hover:shadow-inner border-green-700
+{% else %}
+{# Disponible (Verde Pastel) - AÑADIMOS EL BORDE INICIAL #}
+bg-pastel-green text-green-800 hover:bg-green-300 hover:shadow-md border-green-300
+{% endif %}"
 
-        {% if is_sold %}
-            {# Vendido y Activo (Rojo Pastel) #}
-            bg-pastel-red text-red-800 cursor-not-allowed hover:shadow-inner
-        {% elif is_canceled %}
-            {# Cancelado (Verde Sólido - Visible para todos) #}
-            bg-green-500 text-white cursor-not-allowed hover:shadow-inner 
-        {% else %}
-            {# Disponible (Verde Pastel) #}
-            bg-pastel-green text-green-800 hover:bg-green-300 hover:shadow-md
-        {% endif %}"
 {% if is_sold or is_canceled %}disabled{% endif %}>
 
 {{ number_str }}
 
 {% if is_canceled %}
-    <i class="fas fa-ban text-sm ms-1 d-none d-sm-inline"></i>
+<i class="fas fa-ban text-sm ms-1 d-none d-sm-inline"></i>
 {% endif %}
 
 </button>
@@ -245,13 +255,15 @@ min-w-[40px] max-w-[10%] flex-shrink-0 flex-grow
 </div>
 
 <!-- INICIO: Botón de Reporte (SOLO SUPERUSUARIO) -->
+
 {% if current_user.is_authenticated and current_user.is_superuser() %}
+
 <div class="mt-5 text-center">
-    <!-- CORRECCIÓN: Apuntamos a la nueva función generar_reporte_txt -->
-    <a href="{{ url_for('rifas.generar_reporte_txt', raffle_id=rifa.id) }}" 
-       class="btn bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-xl font-semibold transition shadow-md hover:shadow-lg">
-        <i class="fas fa-file-alt me-2"></i> Generar Reporte TXT (Superusuario)
-    </a>
+<!-- CORRECCIÓN: Apuntamos a la nueva función generar_reporte_txt -->
+<a href="{{ url_for('rifas.generar_reporte_txt', raffle_id=rifa.id) }}"
+class="btn bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-xl font-semibold transition shadow-md hover:shadow-lg">
+<i class="fas fa-file-alt me-2"></i> Generar Reporte TXT (Superusuario)
+</a>
 </div>
 {% endif %}
 <!-- FIN: Botón de Reporte -->
@@ -309,140 +321,148 @@ oninput="filterCards()">
 {% set header_bg_color = 'bg-pastel-red' %}
 {% endif %}
 
-<div class="col search-card" 
-     data-name="{{ group.customer_name | lower }}" 
-     data-phone="{{ group.customer_phone }}" 
-     data-payment="{{ group.payment_method | lower }}" 
-     data-numbers="{{ numbers_list | replace(' ', '') | replace(',', '') }}">
-    <div id="{{ card_id }}" class="{{ card_base_class }} {{ bg_color }} {{ border_color }}">
+<div class="col search-card"
+data-name="{{ group.customer_name | lower }}"
+data-phone="{{ group.customer_phone }}"
+data-payment="{{ group.payment_method | lower }}"
+data-numbers="{{ numbers_list | replace(' ', '') | replace(',', '') }}">
+<div id="{{ card_id }}" class="{{ card_base_class }} {{ bg_color }} {{ border_color }}">
 
-    <!-- Encabezado del Card: Nombre y Teléfono del Cliente -->
-    <div class="{{ header_base_class }} {{ header_bg_color }} {{ border_color }} d-flex justify-content-between align-items-center">
-        <div>
-            <h5 class="mb-0 {{ text_color }} font-bold fs-6">
-                <i class="fas fa-user-circle me-2"></i> {{ group.customer_name }}
-            </h5>
-            <p class="mb-0 {{ text_color | replace('800', '700') }} text-sm">
-                <i class="fas fa-phone-alt me-2"></i> {{ group.customer_phone }} 
-                <span class="d-none d-lg-inline-block text-gray-600 ms-3">| Primer registro: {{ group.created_at }}</span>
-            </p>
-            
-            <!-- NUEVO: Nombre y Sinpe de la RIFA (Aparece en el encabezado del Card) -->
-            <p class="mb-0 text-xs text-indigo-700 font-semibold mt-1">
-                <i class="fas fa-mobile-alt me-1"></i> **Sinpe Rifa:** {{ rifa.sinpe_phone_default or 'No Configurado' }}
-                {% if rifa.sinpe_name_default %}<span class="ms-1">({{ rifa.sinpe_name_default }})</span>{% endif %}
-            </p>
-        </div>
-        
-        {% if group.is_canceled == 1 %}
-            <span class="badge bg-green-700 text-white font-bold px-3 py-2 rounded-full">CANCELADO</span>
-        {% endif %}
-    </div>
+<!-- Encabezado del Card: Nombre y Teléfono del Cliente -->
 
-    <!-- Cuerpo del Card: Números y Botón de Acción -->
-    <div class="card-body p-4 d-flex flex-column justify-content-between">
-        
-        <!-- Total de Venta por Usuario (Solo Superusuario) -->
-        {% if current_user.is_authenticated and current_user.is_superuser() %}
-            <div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm">
-                <p class="text-sm font-medium text-indigo-700 mb-1">Total de Venta ({{ group.numbers | length }} números):</p>
-                <p class="text-2xl font-extrabold text-indigo-800 mb-0">
-                    {{ formatted_price }}
-                </p>
-            </div>
-        {% endif %}
+<div class="{{ header_base_class }} {{ header_bg_color }} {{ border_color }} d-flex justify-content-between align-items-center">
+<div>
+<h5 class="mb-0 {{ text_color }} font-bold fs-6">
+<i class="fas fa-user-circle me-2"></i> {{ group.customer_name }}
+</h5>
+<p class="mb-0 {{ text_color | replace('800', '700') }} text-sm">
+<i class="fas fa-phone-alt me-2"></i> {{ group.customer_phone }}
+<span class="d-none d-lg-inline-block text-gray-600 ms-3">| Primer registro: {{ group.created_at }}</span>
+</p>
 
-        <!-- Números en fila horizontal y wrapping -->
-        <div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
-            <span class="text-sm font-medium {{ text_color }}">Números:</span>
-            {% for number in (group.numbers | sort) %}
-                <span class="font-extrabold rounded-md px-2 py-1 text-sm 
-                    {% if group.is_canceled == 1 %}
-                        bg-green-400 text-white
-                    {% else %}
-                        bg-red-400 text-white
-                    {% endif %}
-                ">{{ number }}</span>
-            {% endfor %}
-        </div>
-        
-        <!-- Contenedor para Ocultar/Mostrar Botones durante la exportación -->
-        <div class="action-buttons mt-auto pt-3 border-top {{ border_color | replace('300', '200') }} d-flex flex-column gap-2">
+<!-- NUEVO: Nombre y Sinpe de la RIFA (Aparece en el encabezado del Card) -->
+<p class="mb-0 text-xs text-indigo-700 font-semibold mt-1">
+    <i class="fas fa-mobile-alt me-1"></i> **Sinpe Rifa:** {{ rifa.sinpe_phone_default or 'No Configurado' }}
+    {% if rifa.sinpe_name_default %}<span class="ms-1">({{ rifa.sinpe_name_default }})</span>{% endif %}
+</p>
 
-            <!-- Botones de Acción: Cancelar y Editar/Liberar (Fila de 2 botones) -->
-            <div class="d-flex flex-wrap gap-2">
-                
-                <!-- Botón Cancelar (Solo Superusuario) -->
-                {% set show_cancel = current_user.is_authenticated and current_user.is_superuser() %}
-                
-                {% if show_cancel %}
-                    {# Botón Cancelar - Ocupa la mitad del espacio disponible #}
-                    <button onclick="confirmCancellation('{{ group.selection_ids | join(',') }}', '{{ group.customer_name }}', {{ group.is_canceled }})"
-                        class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition 
-                        {% if group.is_canceled == 1 %}
-                            btn-success disabled bg-green-500 text-white border-green-700 cursor-not-allowed
-                        {% else %}
-                            btn-outline-success hover:bg-green-100
-                        {% endif %}
-                    ">
-                        <i class="fas fa-ban me-1"></i> 
-                        {{ 'CANCELADO' if group.is_canceled == 1 else 'Marcar Cancelado' }}
-                    </button>
+</div>
 
-                    {# Botón Editar / Liberar - Ocupa la otra mitad del espacio disponible #}
-                    <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
-                        class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
-                        <i class="fas fa-edit me-1"></i> Editar / Liberar
-                    </button>
-                {% else %}
-                    {# Si no es superusuario, solo muestra Editar/Liberar (ocupa 100%) #}
-                    <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
-                        class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
-                        <i class="fas fa-edit me-1"></i> Editar / Liberar
-                    </button>
-                {% endif %}
-            </div>
-            
-            <!-- Variables para el Sinpe de la Rifa -->
-            {% set sinpe_phone = rifa.sinpe_phone_default or 'No configurado' %}
-            {% set sinpe_name = rifa.sinpe_name_default or 'N/A' %}
+{% if group.is_canceled == 1 %}
+<span class="badge bg-green-700 text-white font-bold px-3 py-2 rounded-full">CANCELADO</span>
+{% endif %}
 
-            <!-- Botón WhatsApp -->
-            {% set first_digit = group.customer_phone | default('0') | string | slice(0, 1) %}
-            
-            {% set show_wa = current_user.is_authenticated and current_user.is_superuser() and group.customer_phone | length == 8 %} 
+</div>
 
-            {% if show_wa %}
-                {# MENSAJE PARA EL BOTÓN NORMAL (CON DESTINATARIO) #}
-                {% set wa_text = "¡Hola *%s*! Te confirmo tu selección de número(s) para la rifa *%s* (#%s). Tus números son: *%s*.\n\nEl total a pagar es de: *%s*.\nLa fecha del sorteo es: *%s*.\n\nEl Sinpe Móvil para el pago es: *%s* (a nombre de: *%s*).\n\nPara confirmar su compra, por favor enviar el comprobante de pago."|format(group.customer_name, rifa.prize, rifa.raffle_number, numbers_list, formatted_price, rifa.raffle_date, sinpe_phone, sinpe_name) %}
-                
-                <a href="https://wa.me/506{{ group.customer_phone }}?text={{ wa_text | urlencode }}"
-                   target="_blank"
-                   class="btn btn-sm w-100 mt-0 inline-flex items-center justify-content-center font-medium rounded-xl transition bg-green-600 text-white hover:bg-green-700"
-                   title="Enviar mensaje de WhatsApp a {{ group.customer_name }} con números, total y fecha">
-                    <i class="fab fa-whatsapp me-1"></i> Enviar Info por WhatsApp
-                </a>
+<!-- Cuerpo del Card: Números y Botón de Acción -->
+
+<div class="card-body p-4 d-flex flex-column justify-content-between">
+
+<!-- Total de Venta por Usuario (Solo Superusuario) -->
+
+{% if current_user.is_authenticated and current_user.is_superuser() %}
+<div class="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm">
+<p class="text-sm font-medium text-indigo-700 mb-1">Total de Venta ({{ group.numbers | length }} números):</p>
+<p class="text-2xl font-extrabold text-indigo-800 mb-0">
+{{ formatted_price }}
+</p>
+</div>
+{% endif %}
+
+<!-- Números en fila horizontal y wrapping -->
+
+<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+<span class="text-sm font-medium {{ text_color }}">Números:</span>
+{% for number in (group.numbers | sort) %}
+<span class="font-extrabold rounded-md px-2 py-1 text-sm
+{% if group.is_canceled == 1 %}
+bg-green-400 text-white
+{% else %}
+bg-red-400 text-white
+{% endif %}
+">{{ number }}</span>
+{% endfor %}
+</div>
+
+<!-- Contenedor para Ocultar/Mostrar Botones durante la exportación -->
+
+<div class="action-buttons mt-auto pt-3 border-top {{ border_color | replace('300', '200') }} d-flex flex-column gap-2">
+
+<!-- Botones de Acción: Cancelar y Editar/Liberar (Fila de 2 botones) -->
+<div class="d-flex flex-wrap gap-2">
+    
+    <!-- Botón Cancelar (Solo Superusuario) -->
+    {% set show_cancel = current_user.is_authenticated and current_user.is_superuser() %}
+    
+    {% if show_cancel %}
+        {# Botón Cancelar - Ocupa la mitad del espacio disponible #}
+        <button onclick="confirmCancellation('{{ group.selection_ids | join(',') }}', '{{ group.customer_name }}', {{ group.is_canceled }})"
+            class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition 
+            {% if group.is_canceled == 1 %}
+                btn-success disabled bg-green-500 text-white border-green-700 cursor-not-allowed
+            {% else %}
+                btn-outline-success hover:bg-green-100
             {% endif %}
+        ">
+            <i class="fas fa-ban me-1"></i> 
+            {{ 'CANCELADO' if group.is_canceled == 1 else 'Marcar Cancelado' }}
+        </button>
 
-            <!-- Botón Exportar Card a PNG (Debajo de WhatsApp) -->
-            {% if current_user.is_authenticated and current_user.is_superuser() %}
-            <div class="mt-2">
-                {# MENSAJE PARA EL BOTÓN DE EXPORTAR (SIN DESTINATARIO) #}
-                {% set wa_message_export_no_dest = "¡Hola! Ya puedes encontrar la imagen de la tarjeta de tu(s) número(s) en tu galería de fotos.\n\n_El Sinpe Móvil para el pago es: *%s* (a nombre de: *%s*)._\n\nPor favor, adjúntala y envíala a tu cliente."|format(sinpe_phone, sinpe_name) %}
-                
-                {# MODIFICACIÓN: Se llama a la función con el número de teléfono vacío para forzar la apertura de la app sin destinatario. #}
-                <button type="button" 
-                        onclick="exportCardToPng('{{ card_id }}', '{{ group.customer_name }}', '{{ rifa.raffle_number }}', '', '{{ wa_message_export_no_dest | urlencode }}')"
-                        class="w-full btn btn-sm bg-indigo-500 text-white font-medium rounded-xl transition hover:bg-indigo-600 shadow-md">
-                    <i class="fas fa-camera me-1"></i> Exportar Card a PNG y Enviar WA
-                </button>
-            </div>
-            {% endif %}
+        {# Botón Editar / Liberar - Ocupa la otra mitad del espacio disponible #}
+        <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
+            class="btn btn-sm w-50 flex-grow-1 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
+            <i class="fas fa-edit me-1"></i> Editar / Liberar
+        </button>
+    {% else %}
+        {# Si no es superusuario, solo muestra Editar/Liberar (ocupa 100%) #}
+        <button onclick="openEditModal('{{ group.selection_ids | join(',') }}', '{{ (group.numbers | sort) | join(', ') }}', '{{ group.customer_name }}', '{{ group.customer_phone }}')"
+            class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition hover:bg-red-100 btn-outline-danger">
+            <i class="fas fa-edit me-1"></i> Editar / Liberar
+        </button>
+    {% endif %}
+</div>
 
-        </div>
-    </div>
+<!-- Variables para el Sinpe de la Rifa -->
+{% set sinpe_phone = rifa.sinpe_phone_default or 'No configurado' %}
+{% set sinpe_name = rifa.sinpe_name_default or 'N/A' %}
 
-    </div>
+<!-- Botón WhatsApp -->
+{% set first_digit = group.customer_phone | default('0') | string | slice(0, 1) %}
+
+{% set show_wa = current_user.is_authenticated and current_user.is_superuser() and group.customer_phone | length == 8 %} 
+
+{% if show_wa %}
+    {# MENSAJE PARA EL BOTÓN NORMAL (CON DESTINATARIO) #}
+    {% set wa_text = "¡Hola *%s*! Te confirmo tu selección de número(s) para la rifa *%s* (#%s). Tus números son: *%s*.\n\nEl total a pagar es de: *%s*.\nLa fecha del sorteo es: *%s*.\n\nEl Sinpe Móvil para el pago es: *%s* (a nombre de: *%s*).\n\nPara confirmar su compra, por favor enviar el comprobante de pago."|format(group.customer_name, rifa.prize, rifa.raffle_number, numbers_list, formatted_price, rifa.raffle_date, sinpe_phone, sinpe_name) %}
+    
+    <a href="https://wa.me/506{{ group.customer_phone }}?text={{ wa_text | urlencode }}"
+       target="_blank"
+       class="btn btn-sm w-100 mt-0 inline-flex items-center justify-content-center font-medium rounded-xl transition bg-green-600 text-white hover:bg-green-700"
+       title="Enviar mensaje de WhatsApp a {{ group.customer_name }} con números, total y fecha">
+        <i class="fab fa-whatsapp me-1"></i> Enviar Info por WhatsApp
+    </a>
+{% endif %}
+
+<!-- Botón Exportar Card a PNG (Debajo de WhatsApp) -->
+{% if current_user.is_authenticated and current_user.is_superuser() %}
+<div class="mt-2">
+    {# MENSAJE PARA EL BOTÓN DE EXPORTAR (SIN DESTINATARIO) #}
+    {% set wa_message_export_no_dest = "¡Hola! Ya puedes encontrar la imagen de la tarjeta de tu(s) número(s) en tu galería de fotos.\n\n_El Sinpe Móvil para el pago es: *%s* (a nombre de: *%s*)._\n\nPor favor, adjúntala y envíala a tu cliente."|format(sinpe_phone, sinpe_name) %}
+    
+    {# MODIFICACIÓN: Se llama a la función con el número de teléfono vacío para forzar la apertura de la app sin destinatario. #}
+    <button type="button" 
+            onclick="exportCardToPng('{{ card_id }}', '{{ group.customer_name }}', '{{ rifa.raffle_number }}', '', '{{ wa_message_export_no_dest | urlencode }}')"
+            class="w-full btn btn-sm bg-indigo-500 text-white font-medium rounded-xl transition hover:bg-indigo-600 shadow-md">
+        <i class="fas fa-camera me-1"></i> Exportar Card a PNG y Enviar WA
+    </button>
+</div>
+{% endif %}
+
+</div>
+
+</div>
+
+</div>
 
 </div>
 {% endfor %}
@@ -462,11 +482,14 @@ oninput="filterCards()">
 
 <!-- Botón Flotante para Móvil (d-lg-none) -->
 
+<!-- Este botón flotante que abre el modal siempre debe ser visible para que el usuario pueda interactuar -->
+
 <button id="floating-select-button"
 data-bs-toggle="modal" data-bs-target="#selection-modal-bs"
 class="d-lg-none fixed bottom-3 left-1/2 transform -translate-x-1/2 z-40
 py-3 px-6 bg-indigo-600 text-white font-bold
-rounded-full hover:bg-indigo-700 transition transform hover:scale-105">
+rounded-full hover:bg-indigo-700 transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+disabled>
 <i class="fas fa-hand-pointer me-2"></i> Seleccionar Números
 </button>
 
@@ -504,14 +527,15 @@ onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?
 {% endif %}
 <p class="text-gray-600"><i class="fas fa-tag me-2 text-indigo-500"></i> Precio por Número: <span class="text-xl font-extrabold text-green-600">₡{{ "%.2f"|format(rifa.price) }}</span></p>
 
-    {% if current_user.is_authenticated and current_user.is_superuser() %}
-        <div class="mt-3">
-            <a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}" class="btn btn-warning text-white font-medium rounded-xl hover:bg-yellow-600 transition">
-                <i class="fas fa-edit me-2"></i> Editar Rifa (Admin)
-            </a>
-        </div>
-    {% endif %}
-    
+{% if current_user.is_authenticated and current_user.is_superuser() %}
+
+<div class="mt-3">
+<a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}" class="btn btn-warning text-white font-medium rounded-xl hover:bg-yellow-600 transition">
+<i class="fas fa-edit me-2"></i> Editar Rifa (Admin)
+</a>
+</div>
+{% endif %}
+
 </div>
 
 </div>
@@ -520,23 +544,26 @@ onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?
 <h3 class="text-xl font-bold text-gray-800 mb-3 border-bottom pb-1">Descripción:</h3>
 <p class="text-gray-700 whitespace-pre-wrap">{{ rifa.detail }}</p>
 
-    <!-- SINPE DE LA RIFA (Dueño) - MOVIDO AL LADO DE LA DESCRIPCIÓN para que se vea siempre-->
-    {% if rifa.sinpe_phone_default %}
-    <div class="mt-4 p-3 bg-green-50 border border-green-300 rounded-lg shadow-sm">
-        <h4 class="text-lg font-bold text-green-800 mb-2">
-            <i class="fas fa-mobile-alt me-1"></i> Sinpe Móvil de la Rifa
-        </h4>
-        <p class="text-gray-700 mb-1">
-            <span class="font-semibold">Teléfono:</span> **{{ rifa.sinpe_phone_default }}**
-        </p>
-        <p class="text-gray-700 mb-0">
-            <span class="font-semibold">Nombre Registrado:</span> **{{ rifa.sinpe_name_default or 'No especificado' }}**
-        </p>
-        <p class="text-xs text-green-600 mt-1 mb-0">
-            Este es el Sinpe al que se debe realizar el pago.
-        </p>
-    </div>
-    {% endif %}
+<!-- SINPE DE LA RIFA (Dueño) - MOVIDO AL LADO DE LA DESCRIPCIÓN para que se vea siempre-->
+
+{% if rifa.sinpe_phone_default %}
+
+<div class="mt-4 p-3 bg-green-50 border border-green-300 rounded-lg shadow-sm">
+<h4 class="text-lg font-bold text-green-800 mb-2">
+<i class="fas fa-mobile-alt me-1"></i> Sinpe Móvil de la Rifa
+</h4>
+<p class="text-gray-700 mb-1">
+<span class="font-semibold">Teléfono:</span> {{ rifa.sinpe_phone_default }}
+</p>
+<p class="text-gray-700 mb-0">
+<span class="font-semibold">Nombre Registrado:</span> {{ rifa.sinpe_name_default or 'No especificado' }}
+</p>
+<p class="text-xs text-green-600 mt-1 mb-0">
+Este es el Sinpe al que se debe realizar el pago.
+</p>
+</div>
+{% endif %}
+
 </div>
 
 </div>
@@ -549,12 +576,20 @@ onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?
 
 <!-- MODAL DE SELECCIÓN DE NÚMEROS (Mobile - Bootstrap Modal) -->
 
+<!-- CAMBIO: Se reintroduce modal-fullscreen-sm-down para un mejor manejo de pantalla completa en móvil. -->
+
 <div class="modal fade" id="selection-modal-bs" tabindex="-1" aria-labelledby="selectionModalLabel" aria-hidden="true">
-<div class="modal-dialog modal-dialog-centered">
+<div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
 <div class="modal-content rounded-xl">
 <div class="modal-header border-bottom-0">
-<h2 class="modal-title text-2xl font-bold text-indigo-700" id="selectionModalLabel">Seleccionar Números</h2>
-<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<h2 class="modal-title text-2xl font-bold text-indigo-700" id="selectionModalLabel">Confirmar Compra</h2>
+<!-- NUEVO BOTÓN DE CIERRE -->
+<button type="button"
+class="btn-close"
+data-bs-dismiss="modal"
+aria-label="Cerrar Modal"
+onclick="returnToSelection()">
+</button>
 </div>
 
 <div class="modal-body p-4">
@@ -563,7 +598,7 @@ onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?
 <input type="hidden" name="selected_numbers" id="modal_selected_numbers_input" value="">
 
 <div class="mb-3 p-3 bg-pastel-blue rounded-xl border border-blue-300">
-<label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar:</label>
+<label class="form-label text-sm font-medium text-gray-700 mb-1">Números a Comprar: <span id="modal_total_amount" class="font-extrabold text-blue-900 ms-2"></span></label>
 <span id="modal_selected_numbers_display" class="d-block text-lg font-extrabold text-blue-800">Ninguno</span>
 </div>
 
@@ -594,8 +629,11 @@ style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 
 </div>
 </div>
 
-<button type="submit" id="modal_submit_button" disabled class="mt-3 w-full btn text-lg font-medium text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed">
-Comprar Números Seleccionados
+{# BOTÓN DEL MODAL MÓVIL - SIEMPRE VISIBLE, DESHABILITADO POR JS HASTA SELECCIÓN #}
+<button type="submit" id="modal_submit_button" disabled
+class="mt-3 w-full btn text-lg font-medium text-white transition-all duration-300 bg-indigo-600 hover:bg-indigo-700
+disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-content-center">
+<i class="fas fa-hand-pointer me-2"></i> Seleccione Números
 </button>
 
 </form>
@@ -675,7 +713,7 @@ style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 
 
 <div class="modal-footer d-grid gap-2 d-sm-flex justify-content-sm-end">
 <!-- Botón para Editar (Si el backend lo implementa, puede cambiar 'action' a 'edit_selection') -->
-<button type="submit" id="btn-edit-selection"
+<button type="button" id="btn-edit-selection"
 class="btn btn-warning rounded-xl text-base font-medium transition"
 onclick="document.getElementById('modal-action').value = 'edit_selection'">
 <i class="fas fa-edit me-2"></i> Editar Cliente
@@ -683,7 +721,7 @@ onclick="document.getElementById('modal-action').value = 'edit_selection'">
 
 <!-- Botón para Liberar -->
 
-<button type="submit" id="btn-delete-selection"
+<button type="button" id="btn-delete-selection"
 class="btn btn-danger rounded-xl text-base font-medium transition"
 onclick="document.getElementById('modal-action').value = 'delete_selection'">
 <i class="fas fa-trash-alt me-2"></i> Liberar Números
@@ -792,106 +830,25 @@ class="btn btn-success rounded-xl text-base font-medium transition hover:bg-gree
 
 </div>
 
+<!-- INICIO: Botón de Instalación PWA (Cerca del Footer) -->
+
+{% if current_user.is_authenticated and current_user.is_superuser() %}
+
+<div class="fixed bottom-0 left-0 w-full z-50 p-3 bg-white shadow-2xl border-t border-gray-200 d-flex justify-content-center">
+<button id="install-pwa-button"
+class="btn bg-indigo-600 text-white py-2 px-4 rounded-xl font-semibold transition hover:bg-indigo-700 shadow-lg disabled:opacity-50"
+style="display: none;">
+<i class="fas fa-download me-2"></i> Instalar Aplicación (PWA)
+</button>
+</div>
+{% endif %}
+<!-- FIN: Botón de Instalación PWA -->
+
 <!-- CND de html2canvas -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-<!-- Lógica JS Adicional para campos de pago del cliente y Exportar Card -->
-<script>
-    // Función para mostrar/ocultar campos de Sinpe del cliente (AHORA INACTIVA EN HTML)
-    function toggleSinpeFields(selectId, fieldsId) {
-        // Esta función ya no es necesaria en el HTML pero se mantiene vacía para evitar errores JS
-        console.log("toggleSinpeFields ha sido eliminado del HTML.");
-        // Se elimina la lógica de DOM del JS al final de este archivo.
-    }
-
-    /**
-     * NUEVA FUNCIÓN: Exportar Card a PNG usando html2canvas y luego abrir WhatsApp.
-     * @param {string} cardId - El ID del elemento de la tarjeta a capturar.
-     * @param {string} customerName - Nombre del cliente (solo para nombre de archivo).
-     * @param {string} raffleNumber - Número de la rifa (solo para nombre de archivo).
-     * @param {string} customerPhone - Teléfono del cliente. Si está vacío, abre WA sin destinatario.
-     * @param {string} waMessage - Mensaje de WhatsApp codificado.
-     */
-    function exportCardToPng(cardId, customerName, raffleNumber, customerPhone, waMessage) {
-        const cardElement = document.getElementById(cardId);
-        
-        if (!cardElement) {
-            console.error('Elemento de tarjeta no encontrado:', cardId);
-            return;
-        }
-
-        // 1. Ocultar todos los botones de acción antes de la captura
-        // Usamos la clase 'd-none' para que no se muestren en la captura
-        const elementsToHide = cardElement.querySelectorAll('.action-buttons');
-        elementsToHide.forEach(el => {
-            el.classList.add('d-none');
-        });
-
-        // Crea un nombre de archivo limpio
-        const cleanName = customerName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const fileName = `rifa_${raffleNumber}_${cleanName}.png`;
-
-        // Opciones para asegurar que el fondo se pinte correctamente y mejor calidad
-        const options = {
-            allowTaint: true,
-            useCORS: true,
-            backgroundColor: '#ffffff', // Fondo blanco explícito
-            scale: 2 // Escala para mejor calidad
-        };
-
-        // Usa html2canvas para capturar el elemento
-        html2canvas(cardElement, options).then(canvas => {
-            // 2. Volver a mostrar los botones inmediatamente después de la captura
-            elementsToHide.forEach(el => {
-                el.classList.remove('d-none');
-            });
-            
-            // Convierte el canvas a una URL de datos
-            const image = canvas.toDataURL('image/png');
-            
-            // Crea un enlace de descarga y simula un clic para descargar la imagen
-            const a = document.createElement('a');
-            a.href = image;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            // 3. Abrir WhatsApp en una nueva pestaña
-            let waUrl;
-            
-            // Si customerPhone está vacío (el caso que queremos para seleccionar destinatario manualmente)
-            if (!customerPhone) {
-                // Abre el chat sin destinatario, pero con el mensaje predefinido
-                // Se utiliza el número 0 para forzar el chat o simplemente el wa.me/
-                // Utilizamos el endpoint de la API para que se abra WhatsApp con el mensaje predefinido.
-                // Ya que no se proporciona un número, el usuario debe seleccionar un contacto.
-                waUrl = `https://wa.me/?text=${waMessage}`;
-            } else {
-                // Comportamiento anterior (con destinatario específico)
-                waUrl = `https://wa.me/506${customerPhone}?text=${waMessage}`;
-            }
-
-            window.open(waUrl, '_blank');
-            
-            console.log('Imagen descargada. Se abrió WhatsApp. Por favor, adjunte la imagen descargada manualmente y seleccione el destinatario.');
-
-        }).catch(error => {
-            // 4. Asegurarse de volver a mostrar los botones incluso si hay un error
-            elementsToHide.forEach(el => {
-                el.classList.remove('d-none');
-            });
-            
-            console.error('Error al exportar la tarjeta:', error);
-            // Reemplazamos alert() con console.error según las reglas
-            console.error('Error al generar la imagen. Consulta la consola para más detalles.');
-        });
-    }
-
-    // Inicializar el estado de los campos de Sinpe al cargar la página
-    document.addEventListener('DOMContentLoaded', () => {
-        // Ya no es necesario inicializar el estado del método de pago aquí
-    });
-</script>
+{# CORRECCIÓN: El enlace al archivo JS ahora es correcto. #}
+<script src="{{ url_for('static', filename='js/detalle_rifa.js') }}"></script>
 
 {% endblock %}

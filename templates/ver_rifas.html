@@ -1,361 +1,380 @@
 <!-- ver_rifas.html -->
+
 {% extends "base.html" %}
 
 {% block content %}
+
 <!-- El contenedor principal del base.html ya maneja el padding y el ancho máximo -->
+
 <div class="py-4">
-    <h1 class="text-4xl font-extrabold text-gray-900 mb-5 text-center">Rifas Disponibles</h1>
+<h1 class="text-4xl font-extrabold text-gray-900 mb-5 text-center">Rifas Disponibles</h1>
 
-    <!-- GRID de Bootstrap: 1 columna en móvil, 2 en sm, 3 en lg -->
-    <!-- 'g-4' maneja el espaciado entre las tarjetas -->
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-        {% for rifa in rifas %}
-        <div class="col">
-            <!-- El card principal usa h-100 para altura uniforme y w-full para asegurar que ocupe todo el ancho de la columna -->
-            <div class="card h-100 w-full rounded-xl shadow-lg hover:shadow-xl transition duration-300 overflow-hidden d-flex flex-column">
+<!-- GRID de Bootstrap: 1 columna en móvil, 2 en sm, 3 en lg -->
+<!-- 'g-4' maneja el espaciado entre las tarjetas -->
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+    {% for rifa in rifas %}
+    <div class="col">
+        <!-- El card principal usa h-100 para altura uniforme y w-full para asegurar que ocupe todo el ancho de la columna -->
+        <div class="card h-100 w-full rounded-xl shadow-lg hover:shadow-xl transition duration-300 overflow-hidden d-flex flex-column">
+            
+            <!-- Imagen -->
+            <!-- El contenedor de la imagen fuerza la relación de aspecto cuadrada (aspect-square) -->
+            <!-- Esto asegura que la imagen se adapte perfectamente al ancho disponible, manteniendo la forma 1:1 -->
+            <div class="aspect-square overflow-hidden">
+                <img src="{{ get_image_url(rifa.image_filename) }}" alt="Imagen de la Rifa: {{ rifa.name }}" 
+                     class="w-full h-full object-cover transition duration-500 ease-in-out transform hover:scale-105"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x400/e0e7ff/3f51b5?text=Sin+Imagen';"
+                >
+            </div>
+
+            <!-- Contenido de la Tarjeta -->
+            <!-- flex-grow-1 asegura que este div ocupe todo el espacio vertical restante -->
+            <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                <!-- Título (text-lg y truncate para evitar desbordamiento) -->
+                <h2 class="text-lg font-bold text-gray-800 mb-2 truncate">Rifa #{{ rifa.raffle_number }}: {{ rifa.name }}</h2>
                 
-                <!-- Imagen -->
-                <!-- El contenedor de la imagen fuerza la relación de aspecto cuadrada (aspect-square) -->
-                <!-- Esto asegura que la imagen se adapte perfectamente al ancho disponible, manteniendo la forma 1:1 -->
-                <div class="aspect-square overflow-hidden">
-                    <img src="{{ get_image_url(rifa.image_filename) }}" alt="Imagen de la Rifa: {{ rifa.name }}" 
-                         class="w-full h-full object-cover transition duration-500 ease-in-out transform hover:scale-105"
-                         onerror="this.onerror=null;this.src='https://placehold.co/400x400/e0e7ff/3f51b5?text=Sin+Imagen';"
-                    >
+                <p class="text-2xl font-extrabold text-indigo-600 mb-3">₡{{ "{:,.0f}".format(rifa.price) }}</p>
+                
+                <!-- NUEVA SECCIÓN: NÚMEROS DISPONIBLES -->
+                {% set total_disponible = 100 - (rifa.total_sold_numbers | length if rifa.total_sold_numbers is iterable else 0) %}
+                <div class="p-2 mb-3 bg-green-50 border border-green-300 rounded-lg text-center shadow-sm">
+                    <p class="text-sm font-bold text-green-800 mb-0">
+                        Números Disponibles:
+                        <span class="text-xl font-extrabold">{{ total_disponible }}</span>
+                    </p>
                 </div>
+                <!-- FIN: NUEVA SECCIÓN -->
 
-                <!-- Contenido de la Tarjeta -->
-                <!-- flex-grow-1 asegura que este div ocupe todo el espacio vertical restante -->
-                <div class="card-body p-4 d-flex flex-column flex-grow-1">
-                    <!-- Título (text-lg y truncate para evitar desbordamiento) -->
-                    <h2 class="text-lg font-bold text-gray-800 mb-2 truncate">Rifa #{{ rifa.raffle_number }}: {{ rifa.name }}</h2>
+                <!-- Detalle de la Rifa (flex-grow para que ocupe espacio antes de los botones) -->
+                <div class="space-y-2 text-sm text-gray-600 mb-3 flex-grow">
+                    <p><i class="fas fa-calendar-alt text-indigo-500 me-2"></i> <strong>Fecha:</strong> {{ rifa.raffle_date }}</p>
+                    {% if rifa.raffle_time %}
+                        <p><i class="fas fa-clock text-indigo-500 me-2"></i> <strong>Hora:</strong> {{ rifa.raffle_time }}</p>
+                    {% endif %}
+                    <p><i class="fas fa-trophy text-yellow-500 me-2"></i> <strong>Premio:</strong> {{ rifa.prize }}</p>
                     
-                    <p class="text-2xl font-extrabold text-indigo-600 mb-3">₡{{ "{:,.0f}".format(rifa.price) }}</p>
-
-                    <!-- Detalle de la Rifa (flex-grow para que ocupe espacio antes de los botones) -->
-                    <div class="space-y-2 text-sm text-gray-600 mb-3 flex-grow">
-                        <p><i class="fas fa-calendar-alt text-indigo-500 me-2"></i> <strong>Fecha:</strong> {{ rifa.raffle_date }}</p>
-                        {% if rifa.raffle_time %}
-                            <p><i class="fas fa-clock text-indigo-500 me-2"></i> <strong>Hora:</strong> {{ rifa.raffle_time }}</p>
-                        {% endif %}
-                        <p><i class="fas fa-trophy text-yellow-500 me-2"></i> <strong>Premio:</strong> {{ rifa.prize }}</p>
-                        
-                        <!-- NUEVO: Información de Sinpe de la Rifa -->
-                        {% if rifa.sinpe_phone_default %}
-                            <div class="pt-2 border-top border-gray-100">
-                                <p class="mb-0 text-sm font-semibold text-green-700">
-                                    <i class="fas fa-mobile-alt me-1"></i> Sinpe: {{ rifa.sinpe_phone_default }} ({{ rifa.sinpe_name_default or 'Sin Nombre' }})
-                                </p>
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- SECCIÓN GANADOR(ES) -->
-                    {% set winners_announced = rifa.winning_numbers and rifa.winning_numbers | length > 0 %}
-                    {% if winners_announced %}
-                        <div class="p-3 mb-3 bg-yellow-100 border border-yellow-300 rounded-xl shadow-sm">
-                            <h4 class="text-lg font-bold text-yellow-800 mb-2">
-                                <i class="fas fa-crown me-1"></i> ¡Ganador Anunciado!
-                            </h4>
-                            {% for number in rifa.winning_numbers %}
-                                {% set winner = get_winner_info(rifa.id, number) %}
-                                <div class="d-flex justify-content-between text-sm text-yellow-700 mb-1">
-                                    <span class="font-bold">Número Ganador: {{ number }}</span>
-                                    {% if winner.status and winner.status != 'CANCELADO' and winner.status != 'ERROR_DB' and winner.status != 'NO_VENDIDO_O_ELIMINADO' %}
-                                        <!-- Aseguramos que el nombre del cliente se trunque si es muy largo -->
-                                        <span class="text-truncate" style="max-width: 60%;">Ganador: {{ winner.customer_name }}</span>
-                                    {% else %}
-                                        <span>(No vendido o {{ winner.status if winner.status == 'CANCELADO' else 'Eliminado' }})</span>
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
+                    <!-- NUEVO: Información de Sinpe de la Rifa -->
+                    {% if rifa.sinpe_phone_default %}
+                        <div class="pt-2 border-top border-gray-100">
+                            <p class="mb-0 text-sm font-semibold text-green-700">
+                                <i class="fas fa-mobile-alt me-1"></i> Sinpe: {{ rifa.sinpe_phone_default }} ({{ rifa.sinpe_name_default or 'Sin Nombre' }})
+                            </p>
                         </div>
                     {% endif %}
-                    <!-- FIN: SECCIÓN GANADOR(ES) -->
+                </div>
 
-                    <!-- Botones -->
-                    <div class="d-flex flex-column space-y-3 mt-3">
-                        <a href="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}"
-                           class="btn bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition shadow-md hover:shadow-lg">
-                            Ver Números y Participar
-                        </a>
-                        
-                        {% if current_user.is_authenticated and current_user.is_superuser() %}
-                            <a href="#"
-                               data-bs-toggle="modal" 
-                               data-bs-target="#announce-winner-modal-bs" 
-                               data-raffle-id="{{ rifa.id }}"
-                               data-raffle-name="{{ rifa.name }}"
-                               data-winners-announced="{{ 'true' if winners_announced else 'false' }}"
-                               onclick="prepareWinnerModal({{ rifa.id }}, '{{ rifa.name }}', {{ 'true' if winners_announced else 'false' }})"
-                               class="btn btn-sm text-white bg-red-600 hover:bg-red-700 py-2 rounded-xl text-sm font-medium transition">
-                               <i class="fas fa-bullhorn me-1"></i> Anunciar Ganador
-                            </a>
-                        <a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}"
-                           class="btn btn-sm text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 rounded-xl text-sm font-medium transition">
-                           <i class="fas fa-edit me-1"></i> Editar Rifa
-                        </a>
-                        
-                        <!-- NUEVO BOTÓN: Eliminar Rifa -->
-                        <button type="button" 
-                                class="btn btn-sm text-white bg-gray-500 hover:bg-gray-600 py-2 rounded-xl text-sm font-medium transition"
-                                data-bs-toggle="modal" 
-                                data-bs-target="#delete-raffle-modal-bs"
-                                onclick="prepareDeleteModal({{ rifa.id }}, '{{ rifa.name }}')"> 
-                            <!-- CORRECCIÓN ESTÉTICA: Usamos un ícono de basura para que se vea bien -->
-                            <i class="fas fa-trash-alt me-1"></i> Eliminar Rifa
-                        </button>
-                        
-                        {% endif %}
+                <!-- SECCIÓN GANADOR(ES) -->
+                {% set winners_announced = rifa.winning_numbers and rifa.winning_numbers | length > 0 %}
+                {% if winners_announced %}
+                    <div class="p-3 mb-3 bg-yellow-100 border border-yellow-300 rounded-xl shadow-sm">
+                        <h4 class="text-lg font-bold text-yellow-800 mb-2">
+                            <i class="fas fa-crown me-1"></i> ¡Ganador Anunciado!
+                        </h4>
+                        {% for number in rifa.winning_numbers %}
+                            {% set winner = get_winner_info(rifa.id, number) %}
+                            <div class="d-flex justify-content-between text-sm text-yellow-700 mb-1">
+                                <span class="font-bold">Número Ganador: {{ number }}</span>
+                                {% if winner.status and winner.status != 'CANCELADO' and winner.status != 'ERROR_DB' and winner.status != 'NO_VENDIDO_O_ELIMINADO' %}
+                                    <!-- Aseguramos que el nombre del cliente se trunque si es muy largo -->
+                                    <span class="text-truncate" style="max-width: 60%;">Ganador: {{ winner.customer_name }}</span>
+                                {% else %}
+                                    <span>(No vendido o {{ winner.status if winner.status == 'CANCELADO' else 'Eliminado' }})</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
                     </div>
+                {% endif %}
+                <!-- FIN: SECCIÓN GANADOR(ES) -->
+
+                <!-- Botones -->
+                <div class="d-flex flex-column space-y-3 mt-3">
+                    <a href="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}"
+                       class="btn bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition shadow-md hover:shadow-lg">
+                        Ver Números y Participar
+                    </a>
+                    
+                    {% if current_user.is_authenticated and current_user.is_superuser() %}
+                        <a href="#"
+                           data-bs-toggle="modal" 
+                           data-bs-target="#announce-winner-modal-bs" 
+                           data-raffle-id="{{ rifa.id }}"
+                           data-raffle-name="{{ rifa.name }}"
+                           data-winners-announced="{{ 'true' if winners_announced else 'false' }}"
+                           onclick="prepareWinnerModal({{ rifa.id }}, '{{ rifa.name }}', {{ 'true' if winners_announced else 'false' }})"
+                           class="btn btn-sm text-white bg-red-600 hover:bg-red-700 py-2 rounded-xl text-sm font-medium transition">
+                           <i class="fas fa-bullhorn me-1"></i> Anunciar Ganador
+                        </a>
+                    <a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}"
+                       class="btn btn-sm text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 rounded-xl text-sm font-medium transition">
+                       <i class="fas fa-edit me-1"></i> Editar Rifa
+                    </a>
+                    
+                    <!-- NUEVO BOTÓN: Eliminar Rifa -->
+                    <button type="button" 
+                            class="btn btn-sm text-white bg-gray-500 hover:bg-gray-600 py-2 rounded-xl text-sm font-medium transition"
+                            data-bs-toggle="modal" 
+                            data-bs-target="#delete-raffle-modal-bs"
+                            onclick="prepareDeleteModal({{ rifa.id }}, '{{ rifa.name }}')"> 
+                        <!-- CORRECCIÓN ESTÉTICA: Usamos un ícono de basura para que se vea bien -->
+                        <i class="fas fa-trash-alt me-1"></i> Eliminar Rifa
+                    </button>
+                    
+                    {% endif %}
                 </div>
             </div>
         </div>
-        {% else %}
-        <div class="col-12">
-            <div class="text-center p-5 bg-gray-100 rounded-xl">
-                <p class="text-xl text-gray-600">No hay rifas disponibles en este momento.</p>
-                {% if current_user.is_authenticated and current_user.is_superuser() %}
-                <p class="mt-3"><a href="{{ url_for('rifas.crear_rifa') }}" class="text-indigo-600 font-semibold hover:text-indigo-800">Crea la primera rifa aquí.</a></p>
-                {% endif %}
-            </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="text-center p-5 bg-gray-100 rounded-xl">
+            <p class="text-xl text-gray-600">No hay rifas disponibles en este momento.</p>
+            {% if current_user.is_authenticated and current_user.is_superuser() %}
+            <p class="mt-3"><a href="{{ url_for('rifas.crear_rifa') }}" class="text-indigo-600 font-semibold hover:text-indigo-800">Crea la primera rifa aquí.</a></p>
+            {% endif %}
         </div>
-        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+</div>
+
+<!-- MODAL PARA ANUNCIAR GANADOR (GLOBAL) -->
+
+<div class="modal fade" id="announce-winner-modal-bs" tabindex="-1" aria-labelledby="announceWinnerModalLabel" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content rounded-xl">
+<div class="modal-header border-bottom-0 bg-red-50 rounded-top-xl">
+<h5 class="modal-title font-bold text-red-700" id="announceWinnerModalLabel">Anunciar Ganador de Rifa</h5>
+<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+        <form method="POST" id="winner-form">
+            <input type="hidden" name="raffle_id" id="winner-raffle-id">
+            <input type="hidden" name="winner_action" id="winner-action" value="announce">
+            
+            <div class="modal-body p-4">
+                <p class="text-sm text-gray-600 mb-3" id="modal-instructions">
+                    Seleccione el número de ganadores para la rifa 
+                    <span id="winner-raffle-name" class="font-extrabold text-red-800"></span>.
+                </p>
+
+                <!-- Contenedor de entrada de ganadores (se oculta si ya hay ganadores) -->
+                <div id="winner-input-container">
+                    <!-- Campo de Conteo de Ganadores -->
+                    <div class="mb-3">
+                        <label for="num_winners" class="form-label text-sm font-bold text-gray-700">¿Cuántos ganadores hay?</label>
+                        <select id="num_winners" class="form-select rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500 p-3">
+                            <option value="1">1 Ganador</option>
+                            <option value="2">2 Ganadores</option>
+                            <option value="3">3 Ganadores</option>
+                            <option value="4">4 Ganadores</option>
+                            <option value="5">5 Ganadores</option>
+                        </select>
+                    </div>
+
+                    <!-- Campo de Ingreso de Números Ganadores -->
+                    <div class="mb-3">
+                        <label for="winning_numbers_input" class="form-label text-sm font-bold text-gray-700">
+                            Número(s) Ganador(es) (Separe por coma, ej: 05, 12, 45)
+                        </label>
+                        <input type="text" 
+                               name="winning_numbers" 
+                               id="winning_numbers_input" 
+                               pattern="^(\s*\d{1,2}\s*)(,\s*\d{1,2}\s*)*$"
+                               class="form-control rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500 p-3">
+                        <p class="text-xs text-gray-500 mt-1">
+                            Asegúrese de ingresar números de 1 o 2 dígitos.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-flex justify-content-between">
+                <!-- NUEVO BOTÓN: Eliminar Ganadores -->
+                <button type="button" id="btn-remove-winners" 
+                        class="btn btn-outline-danger rounded-xl font-medium transition"
+                        onclick="setWinnerAction('remove_winners')">
+                    <i class="fas fa-trash-alt me-2"></i> Eliminar Ganadores
+                </button>
+
+                <div>
+                    <button type="button" class="btn btn-secondary rounded-xl font-medium" data-bs-dismiss="modal">
+                        Cerrar
+                    </button>
+                    <button type="submit" id="btn-announce"
+                            class="btn bg-red-600 text-white rounded-xl text-base font-medium transition hover:bg-red-700"
+                            onclick="setWinnerAction('announce')">
+                        <i class="fas fa-bullhorn me-2"></i> Anunciar
+                    </button>
+                </div>
+            </div>
+        </form>
+        
     </div>
 </div>
 
-
-<!-- MODAL PARA ANUNCIAR GANADOR (GLOBAL) -->
-<div class="modal fade" id="announce-winner-modal-bs" tabindex="-1" aria-labelledby="announceWinnerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-xl">
-            <div class="modal-header border-bottom-0 bg-red-50 rounded-top-xl">
-                <h5 class="modal-title font-bold text-red-700" id="announceWinnerModalLabel">Anunciar Ganador de Rifa</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            
-            <form method="POST" id="winner-form">
-                <input type="hidden" name="raffle_id" id="winner-raffle-id">
-                <input type="hidden" name="winner_action" id="winner-action" value="announce">
-                
-                <div class="modal-body p-4">
-                    <p class="text-sm text-gray-600 mb-3" id="modal-instructions">
-                        Seleccione el número de ganadores para la rifa 
-                        <span id="winner-raffle-name" class="font-extrabold text-red-800"></span>.
-                    </p>
-
-                    <!-- Contenedor de entrada de ganadores (se oculta si ya hay ganadores) -->
-                    <div id="winner-input-container">
-                        <!-- Campo de Conteo de Ganadores -->
-                        <div class="mb-3">
-                            <label for="num_winners" class="form-label text-sm font-bold text-gray-700">¿Cuántos ganadores hay?</label>
-                            <select id="num_winners" class="form-select rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500 p-3">
-                                <option value="1">1 Ganador</option>
-                                <option value="2">2 Ganadores</option>
-                                <option value="3">3 Ganadores</option>
-                                <option value="4">4 Ganadores</option>
-                                <option value="5">5 Ganadores</option>
-                            </select>
-                        </div>
-
-                        <!-- Campo de Ingreso de Números Ganadores -->
-                        <div class="mb-3">
-                            <label for="winning_numbers_input" class="form-label text-sm font-bold text-gray-700">
-                                Número(s) Ganador(es) (Separe por coma, ej: 05, 12, 45)
-                            </label>
-                            <input type="text" 
-                                   name="winning_numbers" 
-                                   id="winning_numbers_input" 
-                                   pattern="^(\s*\d{1,2}\s*)(,\s*\d{1,2}\s*)*$"
-                                   class="form-control rounded-xl border-gray-300 focus:border-red-500 focus:ring-red-500 p-3">
-                            <p class="text-xs text-gray-500 mt-1">
-                                Asegúrese de ingresar números de 1 o 2 dígitos.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal-footer d-flex justify-content-between">
-                    <!-- NUEVO BOTÓN: Eliminar Ganadores -->
-                    <button type="button" id="btn-remove-winners" 
-                            class="btn btn-outline-danger rounded-xl font-medium transition"
-                            onclick="setWinnerAction('remove_winners')">
-                        <i class="fas fa-trash-alt me-2"></i> Eliminar Ganadores
-                    </button>
-
-                    <div>
-                        <button type="button" class="btn btn-secondary rounded-xl font-medium" data-bs-dismiss="modal">
-                            Cerrar
-                        </button>
-                        <button type="submit" id="btn-announce"
-                                class="btn bg-red-600 text-white rounded-xl text-base font-medium transition hover:bg-red-700"
-                                onclick="setWinnerAction('announce')">
-                            <i class="fas fa-bullhorn me-2"></i> Anunciar
-                        </button>
-                    </div>
-                </div>
-            </form>
-            
-        </div>
-    </div>
 </div>
 
 <!-- NUEVO MODAL: CONFIRMACIÓN DE ELIMINACIÓN DE RIFA -->
+
 <div class="modal fade" id="delete-raffle-modal-bs" tabindex="-1" aria-labelledby="deleteRaffleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-xl">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content rounded-xl">
+
+        <div class="modal-header border-bottom-0 pt-4 bg-red-100 rounded-top-xl">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0 d-flex align-items-center justify-content-center h-10 w-10 rounded-circle bg-red-300 me-3">
+                    <i class="fas fa-exclamation-triangle text-red-800"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h3 class="modal-title fs-5 font-bold text-red-800" id="deleteRaffleModalLabel">
+                        ¡ADVERTENCIA CRÍTICA!
+                    </h3>
+                    <p class="text-sm text-red-700">
+                        Eliminar la rifa **<span id="raffle-to-delete-name" class="font-extrabold"></span>**
+                    </p>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- El formulario POSTeará a la ruta de eliminación. Dejamos el action vacío para que el JS lo establezca. -->
+        <form method="POST" id="delete-raffle-form" action="">
+            <input type="hidden" name="raffle_id" id="raffle-to-delete-id">
             
-            <div class="modal-header border-bottom-0 pt-4 bg-red-100 rounded-top-xl">
-                <div class="d-flex align-items-start">
-                    <div class="flex-shrink-0 d-flex align-items-center justify-content-center h-10 w-10 rounded-circle bg-red-300 me-3">
-                        <i class="fas fa-exclamation-triangle text-red-800"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h3 class="modal-title fs-5 font-bold text-red-800" id="deleteRaffleModalLabel">
-                            ¡ADVERTENCIA CRÍTICA!
-                        </h3>
-                        <p class="text-sm text-red-700">
-                            Eliminar la rifa **<span id="raffle-to-delete-name" class="font-extrabold"></span>**
-                        </p>
+            <div class="modal-body pt-2">
+                <ul class="space-y-3 p-0 list-unstyled">
+                    <li class="d-flex align-items-start">
+                        <i class="fas fa-times-circle text-red-600 me-3 mt-1 flex-shrink-0"></i>
+                        <div>
+                            <h6 class="font-bold text-gray-800 mb-0">Advertencia #1: Eliminación Permanente</h6>
+                            <p class="text-sm text-gray-600 mb-0">
+                                Esta acción es **irreversible**. No hay forma de recuperar la rifa una vez eliminada.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="d-flex align-items-start">
+                        <i class="fas fa-times-circle text-red-600 me-3 mt-1 flex-shrink-0"></i>
+                        <div>
+                            <h6 class="font-bold text-gray-800 mb-0">Advertencia #2: Se pierden todos los números</h6>
+                            <p class="text-sm text-gray-600 mb-0">
+                                Se eliminarán permanentemente todos los **números vendidos y los datos de los clientes** asociados a esta rifa.
+                            </p>
+                        </div>
+                    </li>
+                    <li class="d-flex align-items-start">
+                        <i class="fas fa-times-circle text-red-600 me-3 mt-1 flex-shrink-0"></i>
+                        <div>
+                            <h6 class="font-bold text-gray-800 mb-0">Advertencia #3: Impacto en el Archivo</h6>
+                            <p class="text-sm text-gray-600 mb-0">
+                                La imagen del premio asociada también será eliminada del servidor.
+                            </p>
+                        </div>
+                    </li>
+                </ul>
+                
+                <div class="mt-4 p-3 bg-red-50 border border-red-300 rounded-lg text-center">
+                    <p class="font-bold text-red-700 mb-0">
+                        Para proceder, marque la casilla.
+                    </p>
+                    <div class="form-check d-flex justify-content-center mt-2">
+                        <input class="form-check-input flex-shrink-0 me-2" type="checkbox" value="" id="confirm-delete-checkbox" required>
+                        <label class="form-check-label text-sm text-red-800 font-semibold" for="confirm-delete-checkbox">
+                            Confirmo que entiendo los riesgos y deseo eliminar la rifa.
+                        </label>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <!-- El formulario POSTeará a la ruta de eliminación. Dejamos el action vacío para que el JS lo establezca. -->
-            <form method="POST" id="delete-raffle-form" action="">
-                <input type="hidden" name="raffle_id" id="raffle-to-delete-id">
-                
-                <div class="modal-body pt-2">
-                    <ul class="space-y-3 p-0 list-unstyled">
-                        <li class="d-flex align-items-start">
-                            <i class="fas fa-times-circle text-red-600 me-3 mt-1 flex-shrink-0"></i>
-                            <div>
-                                <h6 class="font-bold text-gray-800 mb-0">Advertencia #1: Eliminación Permanente</h6>
-                                <p class="text-sm text-gray-600 mb-0">
-                                    Esta acción es **irreversible**. No hay forma de recuperar la rifa una vez eliminada.
-                                </p>
-                            </div>
-                        </li>
-                        <li class="d-flex align-items-start">
-                            <i class="fas fa-times-circle text-red-600 me-3 mt-1 flex-shrink-0"></i>
-                            <div>
-                                <h6 class="font-bold text-gray-800 mb-0">Advertencia #2: Se pierden todos los números</h6>
-                                <p class="text-sm text-gray-600 mb-0">
-                                    Se eliminarán permanentemente todos los **números vendidos y los datos de los clientes** asociados a esta rifa.
-                                </p>
-                            </div>
-                        </li>
-                        <li class="d-flex align-items-start">
-                            <i class="fas fa-times-circle text-red-600 me-3 mt-1 flex-shrink-0"></i>
-                            <div>
-                                <h6 class="font-bold text-gray-800 mb-0">Advertencia #3: Impacto en el Archivo</h6>
-                                <p class="text-sm text-gray-600 mb-0">
-                                    La imagen del premio asociada también será eliminada del servidor.
-                                </p>
-                            </div>
-                        </li>
-                    </ul>
-                    
-                    <div class="mt-4 p-3 bg-red-50 border border-red-300 rounded-lg text-center">
-                        <p class="font-bold text-red-700 mb-0">
-                            Para proceder, marque la casilla.
-                        </p>
-                        <div class="form-check d-flex justify-content-center mt-2">
-                            <input class="form-check-input flex-shrink-0 me-2" type="checkbox" value="" id="confirm-delete-checkbox" required>
-                            <label class="form-check-label text-sm text-red-800 font-semibold" for="confirm-delete-checkbox">
-                                Confirmo que entiendo los riesgos y deseo eliminar la rifa.
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal-footer d-flex justify-content-between">
-                    <button type="button" class="btn btn-secondary rounded-xl font-medium" data-bs-dismiss="modal">
-                        Cancelar
-                    </button>
-                    <!-- El botón de submit requiere que el checkbox esté marcado (por el atributo 'required' en el checkbox) -->
-                    <button type="submit" 
-                            class="btn btn-danger rounded-xl text-base font-medium transition hover:bg-red-700">
-                        <i class="fas fa-trash-alt me-2"></i> Eliminar Rifa Permanentemente
-                    </button>
-                </div>
-            </form>
-            
-        </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary rounded-xl font-medium" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <!-- El botón de submit requiere que el checkbox esté marcado (por el atributo 'required' en el checkbox) -->
+                <button type="submit" 
+                        class="btn btn-danger rounded-xl text-base font-medium transition hover:bg-red-700">
+                    <i class="fas fa-trash-alt me-2"></i> Eliminar Rifa Permanentemente
+                </button>
+            </div>
+        </form>
+        
     </div>
 </div>
 
+</div>
+
 <script>
-    // JS para manejar el modal de anunciar ganador
-    function prepareWinnerModal(raffleId, raffleName, winnersAnnounced) {
-        document.getElementById('winner-raffle-id').value = raffleId;
-        document.getElementById('winner-raffle-name').textContent = raffleName;
-        // CORRECCIÓN: Usar una ruta base para evitar que el Jinja se resuelva literalmente si el navegador lo intenta
-        document.getElementById('winner-form').action = "/rifas/anunciar_ganador/" + raffleId;
+// JS para manejar el modal de anunciar ganador
+function prepareWinnerModal(raffleId, raffleName, winnersAnnounced) {
+document.getElementById('winner-raffle-id').value = raffleId;
+document.getElementById('winner-raffle-name').textContent = raffleName;
+// CORRECCIÓN: Usar una ruta base para evitar que el Jinja se resuelva literalmente si el navegador lo intenta
+document.getElementById('winner-form').action = "/rifas/anunciar_ganador/" + raffleId;
+
+    // Limpiar inputs al abrir
+    document.getElementById(&#39;num_winners&#39;).value = &#39;1&#39;;
+    document.getElementById(&#39;winning_numbers_input&#39;).value = &#39;&#39;;
+    
+    const removeBtn = document.getElementById(&#39;btn-remove-winners&#39;);
+    const announceBtn = document.getElementById(&#39;btn-announce&#39;);
+    const inputContainer = document.getElementById(&#39;winner-input-container&#39;);
+    const instructions = document.getElementById(&#39;modal-instructions&#39;);
+    
+    if (winnersAnnounced) {
+        // Mostrar botón de eliminar y ocultar entradas
+        removeBtn.classList.remove(&#39;d-none&#39;); // Mostrar botón de eliminar
+        announceBtn.classList.add(&#39;d-none&#39;); // Ocultar botón de anunciar
+        inputContainer.classList.add(&#39;d-none&#39;); // Ocultar campos de entrada
         
-        // Limpiar inputs al abrir
-        document.getElementById('num_winners').value = '1';
-        document.getElementById('winning_numbers_input').value = '';
+        instructions.innerHTML = `Ya hay ganadores anunciados para *${raffleName}*. Presione **Eliminar Ganadores** para resetear la rifa y anunciar nuevos.`;
+    } else {
+        // Ocultar botón de eliminar y mostrar entradas
+        removeBtn.classList.add(&#39;d-none&#39;); // Ocultar botón de eliminar
+        announceBtn.classList.remove(&#39;d-none&#39;); // Mostrar botón de anunciar
+        inputContainer.classList.remove(&#39;d-none&#39;); // Mostrar campos de entrada
         
-        const removeBtn = document.getElementById('btn-remove-winners');
-        const announceBtn = document.getElementById('btn-announce');
-        const inputContainer = document.getElementById('winner-input-container');
-        const instructions = document.getElementById('modal-instructions');
-        
-        if (winnersAnnounced) {
-            // Mostrar botón de eliminar y ocultar entradas
-            removeBtn.classList.remove('d-none'); // Mostrar botón de eliminar
-            announceBtn.classList.add('d-none'); // Ocultar botón de anunciar
-            inputContainer.classList.add('d-none'); // Ocultar campos de entrada
-            
-            instructions.innerHTML = `Ya hay ganadores anunciados para *${raffleName}*. Presione **Eliminar Ganadores** para resetear la rifa y anunciar nuevos.`;
-        } else {
-            // Ocultar botón de eliminar y mostrar entradas
-            removeBtn.classList.add('d-none'); // Ocultar botón de eliminar
-            announceBtn.classList.remove('d-none'); // Mostrar botón de anunciar
-            inputContainer.classList.remove('d-none'); // Mostrar campos de entrada
-            
-            instructions.innerHTML = `Seleccione el número de ganadores para la rifa <span id="winner-raffle-name" class="font-extrabold text-red-800">${raffleName}</span>.`;
-        }
-        
-        // Resetear la acción a 'announce' por defecto al abrir
-        setWinnerAction('announce');
+        instructions.innerHTML = `Seleccione el número de ganadores para la rifa &lt;span id=&quot;winner-raffle-name&quot; class=&quot;font-extrabold text-red-800&quot;&gt;${raffleName}&lt;/span&gt;.`;
     }
     
-    // Función para establecer la acción del formulario de ganador
-    function setWinnerAction(action) {
-        document.getElementById('winner-action').value = action;
-        
-        // Si la acción es 'remove_winners', el input de números ya no es requerido para el submit
-        const input = document.getElementById('winning_numbers_input');
-        if (action === 'remove_winners') {
-            input.removeAttribute('required');
-        } else {
-            input.setAttribute('required', 'required');
-        }
+    // Resetear la acción a &#39;announce&#39; por defecto al abrir
+    setWinnerAction(&#39;announce&#39;);
+}
+
+// Función para establecer la acción del formulario de ganador
+function setWinnerAction(action) {
+    document.getElementById(&#39;winner-action&#39;).value = action;
+    
+    // Si la acción es &#39;remove_winners&#39;, el input de números ya no es requerido para el submit
+    const input = document.getElementById(&#39;winning_numbers_input&#39;);
+    if (action === &#39;remove_winners&#39;) {
+        input.removeAttribute(&#39;required&#39;);
+    } else {
+        input.setAttribute(&#39;required&#39;, &#39;required&#39;);
+    }
+}
+
+// NUEVA FUNCIÓN: Prepara el modal de eliminación de rifa
+// MODIFICACIÓN: Construimos el URL dentro del JS
+function prepareDeleteModal(raffleId, raffleName) { 
+    // Establecer el ID de la rifa en el formulario oculto
+    document.getElementById(&#39;raffle-to-delete-id&#39;).value = raffleId;
+    
+    // Mostrar el nombre de la rifa en el encabezado
+    document.getElementById(&#39;raffle-to-delete-name&#39;).textContent = raffleName;
+    
+    // SOLUCIÓN: Asignamos la URL completa ya construida en el cliente.
+    // Ahora el &#39;action&#39; base del formulario es &quot;&quot;, eliminando la confusión de Jinja.
+    const deleteForm = document.getElementById(&#39;delete-raffle-form&#39;);
+    if (deleteForm) {
+        deleteForm.action = &quot;/rifas/eliminar/&quot; + raffleId;
+    } else {
+        console.error(&quot;Error: delete-raffle-form no encontrado.&quot;);
     }
     
-    // NUEVA FUNCIÓN: Prepara el modal de eliminación de rifa
-    // MODIFICACIÓN: Construimos el URL dentro del JS
-    function prepareDeleteModal(raffleId, raffleName) { 
-        // Establecer el ID de la rifa en el formulario oculto
-        document.getElementById('raffle-to-delete-id').value = raffleId;
-        
-        // Mostrar el nombre de la rifa en el encabezado
-        document.getElementById('raffle-to-delete-name').textContent = raffleName;
-        
-        // SOLUCIÓN: Asignamos la URL completa ya construida en el cliente.
-        // Ahora el 'action' base del formulario es "", eliminando la confusión de Jinja.
-        const deleteForm = document.getElementById('delete-raffle-form');
-        if (deleteForm) {
-            deleteForm.action = "/rifas/eliminar/" + raffleId;
-        } else {
-            console.error("Error: delete-raffle-form no encontrado.");
-        }
-        
-        // Asegurar que el checkbox esté desmarcado al abrir
-        document.getElementById('confirm-delete-checkbox').checked = false;
-    }
+    // Asegurar que el checkbox esté desmarcado al abrir
+    document.getElementById(&#39;confirm-delete-checkbox&#39;).checked = false;
+}
+
 </script>
+
 {% endblock %}

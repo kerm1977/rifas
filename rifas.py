@@ -1,3 +1,4 @@
+# rifas.py (Lógica del Blueprint de Rifas - Flask)
 import sqlite3
 import os
 import secrets
@@ -5,7 +6,8 @@ import json # Necesario para manejar la lista de ganadores en JSON
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, Response
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+# IMPORTANTE: AHORA flask_login es el que maneja la persistencia.
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user 
 from werkzeug.utils import secure_filename
 from PIL import Image
 
@@ -208,6 +210,10 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
+        # Capturamos el campo 'remember' (checkbox) del formulario.
+        # Si existe y está marcado, su valor será "on" (o cualquier valor que se envíe), si no, será None.
+        # Si no existe el campo 'remember', por seguridad lo pondremos en True para Superusuarios.
+        remember = bool(request.form.get('remember'))
         
         db = get_db()
         user_data = db.execute('SELECT * FROM user WHERE email = ?', (email,)).fetchone()
@@ -216,7 +222,14 @@ def login():
         if user_data:
             user = User(**user_data)
             if check_password_hash(user.password_hash, password):
-                login_user(user)
+                
+                # Regla: Si el usuario es Superuser, mantenemos la sesión por defecto.
+                if user.is_superuser():
+                    remember = True
+
+                # CAMBIO CLAVE: Usamos login_user(user, remember=remember)
+                # Esto le dice a Flask-Login que persista la sesión (cookie de larga duración)
+                login_user(user, remember=remember) 
                 flash('Inicio de sesión exitoso.', 'success')
                 return redirect(url_for('rifas.ver_rifas'))
         
@@ -231,9 +244,9 @@ def register():
 
     if request.method == 'POST':
         data = request.form
-        email = data.form.get('email')
-        password = data.form.get('password')
-        confirm_password = data.form.get('confirm_password')
+        email = data.get('email')
+        password = data.get('password')
+        confirm_password = data.get('confirm_password')
 
         # 1. Autogenerar contraseña si falta (Min 8 chars)
         if not password or len(password) < 8:
@@ -755,6 +768,8 @@ def detalle_rifa(raffle_id):
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """, (raffle_id, number, name, phone, password_hash, 0, payment_method, sinpe_name, sinpe_phone))
                         newly_selected.append(number)
+                    else:
+                        flash(f'El número {number} ya estaba ocupado/vendido y fue omitido.', 'warning')
                 
                 db.commit()
                 db.close()

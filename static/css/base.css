@@ -7,9 +7,10 @@
 .text-red-800 { color: #58151c; }
 .border-red-700 { border-color: #58151c; }
 
-.bg-pastel-blue { background-color: #cff4fc; } /* Info light */
+.bg-pastel-blue { background-color: #cff4fc; } /* Info light (Celeste) */
 .text-blue-800 { color: #055160; }
 .border-blue-700 { border-color: #055160; }
+.border-blue-300 { border-color: #a0d4eb; } /* Nueva clase agregada para el borde claro de la selección */
 
 /* Aseguramos que el cuerpo ocupe el alto completo y usamos Flexbox para el layout principal */
 html, body {
@@ -121,4 +122,31 @@ nav {
     /* Ajustar la altura para que el difuminado sea visible */
     height: 3rem; /* 48px */
     pointer-events: none; /* Asegura que el gradiente no bloquee el clic */
+}
+
+/* NUEVO CSS: Forzar Modal de Selección a Pantalla Completa en Móvil (hasta 991px) */
+/* El breakpoint 'lg' de Bootstrap es 992px. Aquí forzamos todo abajo de eso. */
+@media (max-width: 991.98px) {
+    /* Seleccionamos específicamente el modal de selección */
+    #selection-modal-bs .modal-dialog {
+        /* Fuerza la ocupación de toda la pantalla en móvil */
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        /* Asegura que el modal-content ocupe el espacio */
+        display: flex;
+        align-items: center;
+    }
+    
+    #selection-modal-bs .modal-content {
+        /* Esto es crucial para que el contenido dentro del modal tenga scroll si es necesario */
+        height: 100vh !important;
+        border-radius: 0 !important; /* Quitar redondeo en pantalla completa */
+    }
+
+    /* Asegurar que el body del modal pueda tener scroll si es necesario */
+    #selection-modal-bs .modal-body {
+        overflow-y: auto;
+    }
 }

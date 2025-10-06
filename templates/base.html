@@ -3,58 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Rifas - {% block title %}{% endblock %}</title>
+    <title>{{ title }} - Sistema de Rifas</title>
     
-    <!-- PWA: Manifiesto -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    
-    <!-- Bootstrap CSS CDN (Se mantiene para las utilidades de layout, containers, forms, y alerts) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    
-    <!-- Tailwind CSS CDN (Para las utilidades de estilo y colores) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     
+    <!-- Bootstrap 5.3 (CSS y JS) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Manifest y Service Worker para PWA -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+    <!-- Estilos base personalizados -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    
+    <!-- Bloque para enlaces CSS específicos de cada página -->
+    {% block head_links %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-vh-100">
 
+    <!-- Barra de Navegación -->
     {% include "navbar.html" %}
 
     <!-- Contenido Principal -->
-    <main class="flex-grow">
-        <!-- Uso del container-fluid de Bootstrap para un contenedor adaptable en todo momento -->
-        <div class="container-fluid px-4 sm:px-6 lg:px-8">
-        
-        {% include "flash.html" %}
-        {% block content %}{% endblock %}
+    <main class="flex-grow-1">
+        <!-- Contenedor para mensajes flash -->
+        <div class="container-fluid max-w-7xl mx-auto px-4 pt-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show rounded-xl" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
         </div>
+        
+        <!-- Bloque de contenido de la página -->
+        {% block content %}{% endblock %}
     </main>
 
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+        <p>&copy; <span id="year">{{ now_year() }}</span> - Sistema de Rifas CR. Todos los derechos reservados.</p>
+    </footer>
 
-    {% include "footer.html" %}
-    
-    <!-- Bootstrap JS CDN (Solo se usa para Modales, Alerts, y Tooltips, NO para el navbar) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/detalle.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/ver_rifas.js') }}"></script>
-    
-    <!-- PWA: Registro del Service Worker -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // La ruta debe ser relativa al dominio raíz (/)
-                navigator.serviceWorker.register('{{ url_for('static', filename='service-worker.js') }}')
-                    .then(registration => {
-                        console.log('ServiceWorker registrado con éxito:', registration);
-                    })
-                    .catch(error => {
-                        console.log('Fallo el registro de ServiceWorker:', error);
-                    });
-            });
-        }
-    </script>
+
 </body>
 </html>

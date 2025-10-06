@@ -1,3 +1,4 @@
+// ver_rifas.js (Lógica JS de Modales de Ganador/Eliminar)
 // JS para manejar el modal de anunciar ganador
 function prepareWinnerModal(raffleId, raffleName, winnersAnnounced) {
     document.getElementById('winner-raffle-id').value = raffleId;

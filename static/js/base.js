@@ -1,3 +1,4 @@
+// base.js (Lógica JS Global y Navbar)
 function now_year() {
     return new Date().getFullYear();
 }
