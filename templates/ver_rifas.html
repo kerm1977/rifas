@@ -4,138 +4,139 @@
 
 {% block content %}
 
-<!-- El contenedor principal del base.html ya maneja el padding y el ancho máximo -->
+<!-- MEJORA: Se agrega la clase 'container' de Bootstrap. 
+     Esto asegura que haya un padding lateral correcto en la página y que el sistema de 
+     grilla (row/col) funcione como se espera, restaurando los márgenes entre las tarjetas. -->
+<div class="container py-4">
+    <h1 class="text-4xl font-extrabold text-gray-900 mb-5 text-center">Rifas Disponibles</h1>
 
-<div class="py-4">
-<h1 class="text-4xl font-extrabold text-gray-900 mb-5 text-center">Rifas Disponibles</h1>
-
-<!-- GRID de Bootstrap: 1 columna en móvil, 2 en sm, 3 en lg -->
-<!-- 'g-4' maneja el espaciado entre las tarjetas -->
-<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-    {% for rifa in rifas %}
-    <div class="col">
-        <!-- El card principal usa h-100 para altura uniforme y w-full para asegurar que ocupe todo el ancho de la columna -->
-        <div class="card h-100 w-full rounded-xl shadow-lg hover:shadow-xl transition duration-300 overflow-hidden d-flex flex-column">
-            
-            <!-- Imagen -->
-            <!-- El contenedor de la imagen fuerza la relación de aspecto cuadrada (aspect-square) -->
-            <!-- Esto asegura que la imagen se adapte perfectamente al ancho disponible, manteniendo la forma 1:1 -->
-            <div class="aspect-square overflow-hidden">
-                <img src="{{ get_image_url(rifa.image_filename) }}" alt="Imagen de la Rifa: {{ rifa.name }}" 
-                     class="w-full h-full object-cover transition duration-500 ease-in-out transform hover:scale-105"
-                     onerror="this.onerror=null;this.src='https://placehold.co/400x400/e0e7ff/3f51b5?text=Sin+Imagen';"
-                >
-            </div>
-
-            <!-- Contenido de la Tarjeta -->
-            <!-- flex-grow-1 asegura que este div ocupe todo el espacio vertical restante -->
-            <div class="card-body p-4 d-flex flex-column flex-grow-1">
-                <!-- Título (text-lg y truncate para evitar desbordamiento) -->
-                <h2 class="text-lg font-bold text-gray-800 mb-2 truncate">Rifa #{{ rifa.raffle_number }}: {{ rifa.name }}</h2>
+    <!-- GRID de Bootstrap: 1 columna en móvil, 2 en sm, 3 en lg -->
+    <!-- 'g-4' maneja el espaciado entre las tarjetas -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+        {% for rifa in rifas %}
+        <div class="col">
+            <!-- El card principal usa h-100 para altura uniforme y w-full para asegurar que ocupe todo el ancho de la columna -->
+            <div class="card h-100 w-full rounded-xl shadow-lg hover:shadow-xl transition duration-300 overflow-hidden d-flex flex-column">
                 
-                <p class="text-2xl font-extrabold text-indigo-600 mb-3">₡{{ "{:,.0f}".format(rifa.price) }}</p>
-                
-                <!-- CORRECCIÓN: Se simplifica el cálculo de números disponibles.
-                     Ahora 'rifa.total_sold_numbers' es un entero que viene del backend. -->
-                {% set total_disponible = 100 - rifa.total_sold_numbers %}
-                <div class="p-2 mb-3 bg-green-50 border border-green-300 rounded-lg text-center shadow-sm">
-                    <p class="text-sm font-bold text-green-800 mb-0">
-                        Números Disponibles:
-                        <span class="text-xl font-extrabold">{{ total_disponible }}</span>
-                    </p>
+                <!-- Imagen -->
+                <!-- El contenedor de la imagen fuerza la relación de aspecto cuadrada (aspect-square) -->
+                <!-- Esto asegura que la imagen se adapte perfectamente al ancho disponible, manteniendo la forma 1:1 -->
+                <div class="aspect-square overflow-hidden">
+                    <img src="{{ get_image_url(rifa.image_filename) }}" alt="Imagen de la Rifa: {{ rifa.name }}" 
+                         class="w-full h-full object-cover transition duration-500 ease-in-out transform hover:scale-105"
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x400/e0e7ff/3f51b5?text=Sin+Imagen';"
+                    >
                 </div>
-                <!-- FIN: CORRECCIÓN -->
 
-                <!-- Detalle de la Rifa (flex-grow para que ocupe espacio antes de los botones) -->
-                <div class="space-y-2 text-sm text-gray-600 mb-3 flex-grow">
-                    <p><i class="fas fa-calendar-alt text-indigo-500 me-2"></i> <strong>Fecha:</strong> {{ rifa.raffle_date }}</p>
-                    {% if rifa.raffle_time %}
-                        <p><i class="fas fa-clock text-indigo-500 me-2"></i> <strong>Hora:</strong> {{ rifa.raffle_time }}</p>
-                    {% endif %}
-                    <p><i class="fas fa-trophy text-yellow-500 me-2"></i> <strong>Premio:</strong> {{ rifa.prize }}</p>
+                <!-- Contenido de la Tarjeta -->
+                <!-- flex-grow-1 asegura que este div ocupe todo el espacio vertical restante -->
+                <div class="card-body p-4 d-flex flex-column flex-grow-1">
+                    <!-- Título (text-lg y truncate para evitar desbordamiento) -->
+                    <h2 class="text-lg font-bold text-gray-800 mb-2 truncate">Rifa #{{ rifa.raffle_number }}: {{ rifa.name }}</h2>
                     
-                    <!-- NUEVO: Información de Sinpe de la Rifa -->
-                    {% if rifa.sinpe_phone_default %}
-                        <div class="pt-2 border-top border-gray-100">
-                            <p class="mb-0 text-sm font-semibold text-green-700">
-                                <i class="fas fa-mobile-alt me-1"></i> Sinpe: {{ rifa.sinpe_phone_default }} ({{ rifa.sinpe_name_default or 'Sin Nombre' }})
-                            </p>
+                    <p class="text-2xl font-extrabold text-indigo-600 mb-3">₡{{ "{:,.0f}".format(rifa.price) }}</p>
+                    
+                    <!-- CORRECCIÓN: Se simplifica el cálculo de números disponibles.
+                         Ahora 'rifa.total_sold_numbers' es un entero que viene del backend. -->
+                    {% set total_disponible = 100 - rifa.total_sold_numbers %}
+                    <div class="p-2 mb-3 bg-green-50 border border-green-300 rounded-lg text-center shadow-sm">
+                        <p class="text-sm font-bold text-green-800 mb-0">
+                            Números Disponibles:
+                            <span class="text-xl font-extrabold">{{ total_disponible }}</span>
+                        </p>
+                    </div>
+                    <!-- FIN: CORRECCIÓN -->
+
+                    <!-- Detalle de la Rifa (flex-grow para que ocupe espacio antes de los botones) -->
+                    <div class="space-y-2 text-sm text-gray-600 mb-3 flex-grow">
+                        <p><i class="fas fa-calendar-alt text-indigo-500 me-2"></i> <strong>Fecha:</strong> {{ rifa.raffle_date }}</p>
+                        {% if rifa.raffle_time %}
+                            <p><i class="fas fa-clock text-indigo-500 me-2"></i> <strong>Hora:</strong> {{ rifa.raffle_time }}</p>
+                        {% endif %}
+                        <p><i class="fas fa-trophy text-yellow-500 me-2"></i> <strong>Premio:</strong> {{ rifa.prize }}</p>
+                        
+                        <!-- NUEVO: Información de Sinpe de la Rifa -->
+                        {% if rifa.sinpe_phone_default %}
+                            <div class="pt-2 border-top border-gray-100">
+                                <p class="mb-0 text-sm font-semibold text-green-700">
+                                    <i class="fas fa-mobile-alt me-1"></i> Sinpe: {{ rifa.sinpe_phone_default }} ({{ rifa.sinpe_name_default or 'Sin Nombre' }})
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- SECCIÓN GANADOR(ES) -->
+                    {% set winners_announced = rifa.winning_numbers and rifa.winning_numbers | length > 0 %}
+                    {% if winners_announced %}
+                        <div class="p-3 mb-3 bg-yellow-100 border border-yellow-300 rounded-xl shadow-sm">
+                            <h4 class="text-lg font-bold text-yellow-800 mb-2">
+                                <i class="fas fa-crown me-1"></i> ¡Ganador Anunciado!
+                            </h4>
+                            {% for number in rifa.winning_numbers %}
+                                {% set winner = get_winner_info(rifa.id, number) %}
+                                <div class="d-flex justify-content-between text-sm text-yellow-700 mb-1">
+                                    <span class="font-bold">Número Ganador: {{ number }}</span>
+                                    {% if winner and 'status' not in winner %}
+                                        <!-- Aseguramos que el nombre del cliente se trunque si es muy largo -->
+                                        <span class="text-truncate" style="max-width: 60%;">Ganador: {{ winner.customer_name }}</span>
+                                    {% else %}
+                                        <span>(No vendido o {{ 'Cancelado' if winner.status == 'CANCELADO' else 'Eliminado' }})</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
                         </div>
                     {% endif %}
-                </div>
+                    <!-- FIN: SECCIÓN GANADOR(ES) -->
 
-                <!-- SECCIÓN GANADOR(ES) -->
-                {% set winners_announced = rifa.winning_numbers and rifa.winning_numbers | length > 0 %}
-                {% if winners_announced %}
-                    <div class="p-3 mb-3 bg-yellow-100 border border-yellow-300 rounded-xl shadow-sm">
-                        <h4 class="text-lg font-bold text-yellow-800 mb-2">
-                            <i class="fas fa-crown me-1"></i> ¡Ganador Anunciado!
-                        </h4>
-                        {% for number in rifa.winning_numbers %}
-                            {% set winner = get_winner_info(rifa.id, number) %}
-                            <div class="d-flex justify-content-between text-sm text-yellow-700 mb-1">
-                                <span class="font-bold">Número Ganador: {{ number }}</span>
-                                {% if winner and 'status' not in winner %}
-                                    <!-- Aseguramos que el nombre del cliente se trunque si es muy largo -->
-                                    <span class="text-truncate" style="max-width: 60%;">Ganador: {{ winner.customer_name }}</span>
-                                {% else %}
-                                    <span>(No vendido o {{ 'Cancelado' if winner.status == 'CANCELADO' else 'Eliminado' }})</span>
-                                {% endif %}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-                <!-- FIN: SECCIÓN GANADOR(ES) -->
-
-                <!-- Botones -->
-                <div class="d-flex flex-column space-y-3 mt-3">
-                    <a href="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}"
-                       class="btn bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition shadow-md hover:shadow-lg">
-                        Ver Números y Participar
-                    </a>
-                    
-                    {% if current_user.is_authenticated and current_user.is_superuser() %}
-                        <a href="#"
-                           data-bs-toggle="modal" 
-                           data-bs-target="#announce-winner-modal-bs" 
-                           data-raffle-id="{{ rifa.id }}"
-                           data-raffle-name="{{ rifa.name }}"
-                           data-winners-announced="{{ 'true' if winners_announced else 'false' }}"
-                           onclick="prepareWinnerModal({{ rifa.id }}, '{{ rifa.name }}', {{ 'true' if winners_announced else 'false' }})"
-                           class="btn btn-sm text-white bg-red-600 hover:bg-red-700 py-2 rounded-xl text-sm font-medium transition">
-                           <i class="fas fa-bullhorn me-1"></i> Anunciar Ganador
+                    <!-- Botones -->
+                    <div class="d-flex flex-column space-y-3 mt-3">
+                        <a href="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}"
+                           class="btn bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition shadow-md hover:shadow-lg">
+                            Ver Números y Participar
                         </a>
-                    <a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}"
-                       class="btn btn-sm text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 rounded-xl text-sm font-medium transition">
-                       <i class="fas fa-edit me-1"></i> Editar Rifa
-                    </a>
-                    
-                    <!-- NUEVO BOTÓN: Eliminar Rifa -->
-                    <button type="button" 
-                            class="btn btn-sm text-white bg-gray-500 hover:bg-gray-600 py-2 rounded-xl text-sm font-medium transition"
-                            data-bs-toggle="modal" 
-                            data-bs-target="#delete-raffle-modal-bs"
-                            onclick="prepareDeleteModal({{ rifa.id }}, '{{ rifa.name }}')"> 
-                        <!-- CORRECCIÓN ESTÉTICA: Usamos un ícono de basura para que se vea bien -->
-                        <i class="fas fa-trash-alt me-1"></i> Eliminar Rifa
-                    </button>
-                    
-                    {% endif %}
+                        
+                        {% if current_user.is_authenticated and current_user.is_superuser() %}
+                            <a href="#"
+                               data-bs-toggle="modal" 
+                               data-bs-target="#announce-winner-modal-bs" 
+                               data-raffle-id="{{ rifa.id }}"
+                               data-raffle-name="{{ rifa.name }}"
+                               data-winners-announced="{{ 'true' if winners_announced else 'false' }}"
+                               onclick="prepareWinnerModal({{ rifa.id }}, '{{ rifa.name }}', {{ 'true' if winners_announced else 'false' }})"
+                               class="btn btn-sm text-white bg-red-600 hover:bg-red-700 py-2 rounded-xl text-sm font-medium transition">
+                               <i class="fas fa-bullhorn me-1"></i> Anunciar Ganador
+                            </a>
+                        <a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}"
+                           class="btn btn-sm text-gray-600 bg-gray-100 hover:bg-gray-200 py-2 rounded-xl text-sm font-medium transition">
+                           <i class="fas fa-edit me-1"></i> Editar Rifa
+                        </a>
+                        
+                        <!-- NUEVO BOTÓN: Eliminar Rifa -->
+                        <button type="button" 
+                                class="btn btn-sm text-white bg-gray-500 hover:bg-gray-600 py-2 rounded-xl text-sm font-medium transition"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#delete-raffle-modal-bs"
+                                onclick="prepareDeleteModal({{ rifa.id }}, '{{ rifa.name }}')"> 
+                            <!-- CORRECCIÓN ESTÉTICA: Usamos un ícono de basura para que se vea bien -->
+                            <i class="fas fa-trash-alt me-1"></i> Eliminar Rifa
+                        </button>
+                        
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    {% else %}
-    <div class="col-12">
-        <div class="text-center p-5 bg-gray-100 rounded-xl">
-            <p class="text-xl text-gray-600">No hay rifas disponibles en este momento.</p>
-            {% if current_user.is_authenticated and current_user.is_superuser() %}
-            <p class="mt-3"><a href="{{ url_for('rifas.crear_rifa') }}" class="text-indigo-600 font-semibold hover:text-indigo-800">Crea la primera rifa aquí.</a></p>
-            {% endif %}
+        {% else %}
+        <div class="col-12">
+            <div class="text-center p-5 bg-gray-100 rounded-xl">
+                <p class="text-xl text-gray-600">No hay rifas disponibles en este momento.</p>
+                {% if current_user.is_authenticated and current_user.is_superuser() %}
+                <p class="mt-3"><a href="{{ url_for('rifas.crear_rifa') }}" class="text-indigo-600 font-semibold hover:text-indigo-800">Crea la primera rifa aquí.</a></p>
+                {% endif %}
+            </div>
         </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
 
 </div>
 
