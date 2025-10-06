@@ -312,8 +312,17 @@ def logout():
 def ver_rifas():
     """Vista pública para ver las rifas disponibles."""
     db = get_db()
-    # MODIFICACIÓN: Traemos las nuevas columnas de Sinpe por defecto
-    rifas_data = db.execute('SELECT *, sinpe_name_default, sinpe_phone_default FROM raffle ORDER BY raffle_date DESC').fetchall()
+    # CORRECCIÓN: Se modifica la consulta para que cuente los números vendidos (no cancelados)
+    # de cada rifa usando un LEFT JOIN y GROUP BY para mayor eficiencia.
+    rifas_data = db.execute("""
+        SELECT 
+            r.*, 
+            COUNT(s.id) as total_sold_numbers
+        FROM raffle r
+        LEFT JOIN selection s ON r.id = s.raffle_id AND s.is_canceled = 0
+        GROUP BY r.id
+        ORDER BY r.raffle_date DESC
+    """).fetchall()
     db.close()
     
     # Procesar los números ganadores (JSON string a lista de Python)
