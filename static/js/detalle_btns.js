@@ -11,18 +11,19 @@ window.openDeleteModal = function(selectionIds, customerName, numbersList) {
     const raffleIdInput = document.getElementById('raffle_id_input');
     const raffleId = raffleIdInput ? raffleIdInput.value : null;
 
-    // 1. Asegurar que selectionIds sea un string, aunque esté vacío
-    const idsString = String(selectionIds);
+    // --- CORRECCIÓN CLAVE ---
+    // Aseguramos que selectionIds sea tratado como string y eliminamos cualquier caracter no deseado.
+    let cleanIds = String(selectionIds).replace(/[\[\]\s]/g, '');
 
-    // 2. Asignar los IDs de selección al campo oculto del modal
+    // 1. Asignar los IDs de selección al campo oculto del modal
     const idsInput = document.getElementById('modal-delete-ids');
     if (idsInput) {
-        idsInput.value = idsString;
+        idsInput.value = cleanIds;
     } else {
         console.error("Error JS: Elemento #modal-delete-ids no encontrado.");
     }
     
-    // 3. Asignar la URL de acción del formulario
+    // 2. Asignar la URL de acción del formulario
     const deleteForm = document.getElementById('delete-selection-form');
     if (deleteForm && raffleId) {
         // La acción POST debe ir a /rifas/<id_de_rifa>
@@ -31,7 +32,7 @@ window.openDeleteModal = function(selectionIds, customerName, numbersList) {
         console.error("Error JS: Formulario #delete-selection-form no encontrado o Raffle ID faltante.");
     }
 
-    // 4. Actualizar elementos visuales del modal
+    // 3. Actualizar elementos visuales del modal
     document.getElementById('modal-delete-numbers-display').textContent = numbersList;
     document.getElementById('modal-delete-name-display').textContent = customerName;
     document.getElementById('delete_password_input').value = ''; // Limpiar campo de contraseña

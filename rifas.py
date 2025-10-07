@@ -563,7 +563,6 @@ def anunciar_ganador(raffle_id):
             
     return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
-
 @bp.route('/rifas/reporte-txt/<int:raffle_id>')
 @login_required
 def generar_reporte_txt(raffle_id):
@@ -775,6 +774,7 @@ def detalle_rifa(raffle_id):
                 # Intentar validar con la contraseña del Superusuario (Override)
                 elif is_superuser_attempt:
                     admin_user = User.get(current_user.id)
+                    # La contraseña del superusuario es 'CR129x7848n'
                     if admin_user and check_password_hash(admin_user.password_hash, password_check):
                         pass # Contraseña de Superusuario correcta, continuar al paso 3
                     else:
@@ -827,11 +827,14 @@ def detalle_rifa(raffle_id):
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
             selection_ids = tuple(selection_ids_str.split(','))
-            placeholders = ','.join('?' * len(selection_ids))
+            # Convertir a enteros para seguridad
+            selection_ids_int = tuple(int(id.strip()) for id in selection_ids if id.strip().isdigit())
+            
+            placeholders = ','.join('?' * len(selection_ids_int))
 
             try:
                 # Marcar como cancelado (1)
-                db.execute(f'UPDATE selection SET is_canceled = 1 WHERE id IN ({placeholders})', selection_ids)
+                db.execute(f'UPDATE selection SET is_canceled = 1 WHERE id IN ({placeholders})', selection_ids_int)
                 db.commit()
                 flash('La selección ha sido marcada como CANCELADA (Admin).', 'warning')
             except Exception as e:

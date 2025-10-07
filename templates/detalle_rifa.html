@@ -275,8 +275,7 @@
                         <div class="action-buttons mt-auto pt-3 border-top {{ border_color | replace('300', '200') }} d-flex flex-column gap-2">
                             
                             <!-- Botón 1: LIBERAR NÚMEROS (Requiere Contraseña de Protección) -->
-                            <!-- CRÍTICO: Uso de | tojson para la transferencia segura de datos al JS -->
-                            <button onclick="openDeleteModal({{ selection_ids_list | tojson }}, {{ group.customer_name | tojson }}, {{ numbers_list | tojson }})"
+                            <button onclick="openDeleteModal('{{ selection_ids_list }}', '{{ group.customer_name }}', '{{ numbers_list }}')"
                                     class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition bg-red-600 text-white hover:bg-red-700"
                                     data-bs-toggle="modal" 
                                     data-bs-target="#delete-modal-bs">
@@ -285,16 +284,15 @@
                             
                             <!-- Botón 2: Marcar como CANCELADO (Solo Superusuario) -->
                             {% if current_user.is_authenticated and current_user.is_superuser() %}
-                            <form method="POST" action="{{ url_for('rifas.detalle_rifa', raffle_id=rifa.id) }}" class="d-inline-block w-100">
-                                <input type="hidden" name="action" value="mark_canceled">
-                                <input type="hidden" name="selection_ids" value="{{ selection_ids_list }}">
-                                <button type="submit"
-                                        class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition 
-                                        {% if group.is_canceled == 1 %} btn-secondary disabled cursor-not-allowed
-                                        {% else %} btn-warning text-white hover:bg-yellow-600 {% endif %}">
-                                    <i class="fas fa-ban me-1"></i> {{ 'CANCELADO' if group.is_canceled == 1 else 'Marcar Cancelado (Admin)' }}
-                                </button>
-                            </form>
+                            <button onclick="openCancelModal('{{ selection_ids_list }}', '{{ group.customer_name }}')"
+                                    class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition 
+                                    {% if group.is_canceled == 1 %} btn-secondary disabled cursor-not-allowed
+                                    {% else %} btn-warning text-white hover:bg-yellow-600 {% endif %}"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#cancel-modal-bs"
+                                    {% if group.is_canceled == 1 %}disabled{% endif %}>
+                                <i class="fas fa-ban me-1"></i> {{ 'CANCELADO' if group.is_canceled == 1 else 'Marcar Cancelado (Admin)' }}
+                            </button>
                             {% endif %}
 
                             <!-- Botones de Utilidad (WhatsApp y Exportar) -->
@@ -376,12 +374,12 @@
                     <div class="mb-3">
                         <label for="delete_password_input" class="form-label text-sm font-medium text-gray-700">Contraseña de Protección:</label>
                         <div class="input-group mt-1">
-                            <input type="password" name="delete_password" id="delete_password_input" required minlength="4" class="form-control rounded-xl p-3">
+                            <input type="password" name="delete_password" id="delete_password_input" minlength="4" class="form-control rounded-xl p-3">
                             <button type="button" onclick="togglePasswordVisibility('delete_password_input')" class="btn btn-outline-secondary border-0" style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
                                 <i class="fas fa-eye-slash" id="toggle_delete_password_input_icon"></i>
                             </button>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Ingrese la contraseña que el cliente asignó al comprar para confirmar la liberación.</p>
+                        <p class="text-xs text-gray-500 mt-1">Ingrese la contraseña del cliente. **Superusuario:** deje vacío para eliminar a la fuerza, o use su contraseña para *override*.</p>
                     </div>
                 </div>
                 <div class="modal-footer d-flex justify-content-between">
@@ -393,47 +391,37 @@
     </div>
 </div>
 
-
-<!-- MODAL DE INFORMACIÓN DE RIFA (MANTENIDO) -->
-<div class="modal fade" id="raffle-info-modal-bs" tabindex="-1" aria-labelledby="raffleInfoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<!-- MODAL DE CANCELACIÓN (MARK CANCELED) -->
+<div class="modal fade" id="cancel-modal-bs" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-xl">
-            <div class="modal-header border-bottom-0">
-                <h2 class="modal-title text-2xl font-bold text-gray-800" id="raffleInfoModalLabel">Detalles de la Rifa</h2>
+            <div class="modal-header border-bottom-0 pt-4 bg-yellow-50 rounded-top-xl">
+                <h3 class="modal-title fs-5 font-bold text-yellow-700" id="cancelModalLabel">Marcar como Cancelado</h3>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4">
-                <div class="row g-4">
-                    <div class="col-12 col-lg-6">
-                        <div class="cursor-pointer" data-bs-toggle="modal" data-bs-target="#image-zoom-modal-bs" onclick="openZoomModal('{{ url_for('static', filename='uploads/' + rifa.image_filename) }}')">
-                            <img src="{{ url_for('static', filename='uploads/' + rifa.image_filename) }}" alt="Imagen del Premio" class="rounded-lg object-cover w-full max-w-full h-48 md:h-64 mb-4 border border-gray-200" onerror="this.onerror=null;this.src='https://placehold.co/400x300/e0e7ff/3f51b5?text=Sin+Imagen';">
-                        </div>
-                        <div class="space-y-3">
-                            <p class="text-xl font-semibold text-indigo-700">Premio: <span class="text-2xl font-bold text-indigo-900">{{ rifa.prize }}</span></p>
-                            <p class="text-gray-600"><i class="fas fa-calendar-alt me-2 text-indigo-500"></i> Fecha del Sorteo: <span class="font-medium text-gray-800">{{ rifa.raffle_date }}</span></p>
-                            {% if rifa.raffle_time %}<p class="text-gray-600"><i class="fas fa-clock me-2 text-indigo-500"></i> Hora Estimada: <span class="font-medium text-gray-800">{{ rifa.raffle_time }}</span></p>{% endif %}
-                            <p class="text-gray-600"><i class="fas fa-tag me-2 text-indigo-500"></i> Precio por Número: <span class="text-xl font-extrabold text-green-600">₡{{ "%.2f"|format(rifa.price) }}</span></p>
-                            {% if current_user.is_authenticated and current_user.is_superuser() %}
-                            <div class="mt-3"><a href="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}" class="btn btn-warning text-white font-medium rounded-xl hover:bg-yellow-600 transition"><i class="fas fa-edit me-2"></i> Editar Rifa (Admin)</a></div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-6">
-                        <h3 class="text-xl font-bold text-gray-800 mb-3 border-bottom pb-1">Descripción:</h3>
-                        <p class="text-gray-700 whitespace-pre-wrap">{{ rifa.detail }}</p>
-                        {% if rifa.sinpe_phone_default %}
-                        <div class="mt-4 p-3 bg-green-50 border border-green-300 rounded-lg shadow-sm">
-                            <h4 class="text-lg font-bold text-green-800 mb-2"><i class="fas fa-mobile-alt me-1"></i> Sinpe Móvil de la Rifa</h4>
-                            <p class="text-gray-700 mb-1"><span class="font-semibold">Teléfono:</span> {{ rifa.sinpe_phone_default }}</p>
-                            <p class="text-gray-700 mb-0"><span class="font-semibold">Nombre Registrado:</span> {{ rifa.sinpe_name_default or 'No especificado' }}</p>
-                        </div>
-                        {% endif %}
+            <form method="POST" action="" id="cancel-selection-form">
+                <div class="modal-body pt-0">
+                    <input type="hidden" name="action" value="mark_canceled">
+                    <input type="hidden" name="selection_ids" id="modal-cancel-ids">
+                    
+                    <div class="p-3 bg-gray-50 rounded-lg mb-3 border border-yellow-200">
+                        <p class="text-base text-gray-700 mb-1">
+                            ¿Confirma que el cliente <span id="modal-cancel-customer-name" class="font-extrabold text-yellow-800"></span> ha CANCELADO su selección?
+                        </p>
+                        <p class="text-sm text-yellow-600 font-medium mb-0">
+                            **Los números se marcarán como CANCELADOS** (no se liberan) y el color de la tarjeta cambiará a verde.
+                        </p>
                     </div>
                 </div>
-            </div>
+                <div class="modal-footer d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary rounded-xl" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning text-white rounded-xl"><i class="fas fa-check-circle me-2"></i> Confirmar Cancelación</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
 
 <!-- MODAL DE SELECCIÓN DE NÚMEROS (Mobile) (MANTENIDO) -->
 <div class="modal fade" id="selection-modal-bs" tabindex="-1" aria-labelledby="selectionModalLabel" aria-hidden="true">
