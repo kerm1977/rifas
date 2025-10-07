@@ -545,7 +545,7 @@ def anunciar_ganador(raffle_id):
                     winning_numbers.append(formatted_num)
                 except ValueError:
                     flash(f'Advertencia: El número "{num}" no es un formato de número válido y fue ignorado.', 'warning')
-                    
+                        
             if not winning_numbers:
                 flash('No se pudieron procesar números ganadores válidos.', 'danger')
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
@@ -560,8 +560,9 @@ def anunciar_ganador(raffle_id):
         flash(f'Error al guardar/eliminar el(los) ganador(es): {e}', 'danger')
     finally:
         db.close()
-        
+            
     return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
 
 @bp.route('/rifas/reporte-txt/<int:raffle_id>')
 @login_required
@@ -674,6 +675,10 @@ def detalle_rifa(raffle_id):
         
         grouped_selections[customer_key]['numbers'].append(selection['number'])
         grouped_selections[customer_key]['selection_ids'].append(selection['id'])
+        # NOTA: Asumimos que si un grupo tiene números cancelados y activos, la bandera general
+        # de is_canceled debe ser manejada por la acción específica del superusuario.
+        # Aquí solo aseguramos que el valor final sea el del último número procesado.
+        # Para simplificar, la lógica de cancelación se aplica a todos los IDs del grupo en la acción POST.
         grouped_selections[customer_key]['is_canceled'] = selection['is_canceled']
 
 
@@ -681,6 +686,7 @@ def detalle_rifa(raffle_id):
         action = request.form.get('action')
         
         if action == 'add_selection':
+            # ... Lógica de adición de selección (sin cambios relevantes en la compra) ...
             name = request.form.get('customer_name')
             phone = request.form.get('customer_phone')
             password = request.form.get('selection_password')
@@ -732,36 +738,76 @@ def detalle_rifa(raffle_id):
                 db.close()
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
+        # --- Lógica de Liberar Números (Eliminar con Contraseña) ---
         elif action == 'delete_selection':
             password_check = request.form.get('delete_password')
             selection_ids_str = request.form.get('selection_ids')
             
-            if not password_check or not selection_ids_str:
-                flash('Faltan datos (Contraseña o IDs de selección).', 'danger')
+            # --- PRIMERA LÍNEA DE DEFENSA: VIGILANCIA DE DATOS ---
+            # Si el campo de IDs está vacío, reportamos el error inmediatamente.
+            if not selection_ids_str or selection_ids_str.strip() == "":
+                flash('Error: IDs de selección faltantes. No se puede liberar.', 'danger')
                 db.close()
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+            
+            is_superuser_attempt = current_user.is_authenticated and current_user.is_superuser()
+            
+            # 1. ELIMINACIÓN FORZADA RADICAL (Solo Superusuario y sin contraseña de cliente)
+            if is_superuser_attempt and (not password_check or password_check.strip() == ""):
+                # Si es Superusuario e intenta eliminar sin contraseña, permitimos.
+                pass # Continúa al Paso 3 (Eliminación)
+            
+            # 2. VALIDACIÓN DE CONTRASEÑA (Para clientes o Superusuarios que intentan usar contraseña)
+            elif password_check and password_check.strip() != "":
+                selection_ids = tuple(selection_ids_str.split(','))
+                # Buscamos el hash del primer número para verificar la contraseña de protección
+                first_selection = db.execute('SELECT selection_password_hash FROM selection WHERE id = ?', (selection_ids[0],)).fetchone()
+                
+                if not first_selection:
+                    flash('Error: El grupo de selección no fue encontrado para verificar la contraseña.', 'danger')
+                    db.close()
+                    return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+                
+                # Intentar validar con la contraseña del cliente
+                if check_password_hash(first_selection['selection_password_hash'], password_check):
+                    pass # Contraseña de cliente correcta, continuar al paso 3
+                
+                # Intentar validar con la contraseña del Superusuario (Override)
+                elif is_superuser_attempt:
+                    admin_user = User.get(current_user.id)
+                    if admin_user and check_password_hash(admin_user.password_hash, password_check):
+                        pass # Contraseña de Superusuario correcta, continuar al paso 3
+                    else:
+                        flash('Contraseña incorrecta (Superusuario). No se liberaron los números.', 'danger')
+                        db.close()
+                        return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+                
+                else:
+                    flash('Contraseña de protección incorrecta. No se liberaron los números.', 'danger')
+                    db.close()
+                    return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+            
+            # Si se llega aquí y no es Superusuario, significa que falta la contraseña del cliente.
+            else:
+                 flash('Contraseña de protección requerida para liberar los números.', 'danger')
+                 db.close()
+                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
+
+            # 3. ELIMINACIÓN FORZADA (O por contraseña válida)
             selection_ids = tuple(selection_ids_str.split(','))
-            
-            # 1. Obtener el hash de contraseña de la primera selección para verificación
-            first_selection = db.execute('SELECT selection_password_hash FROM selection WHERE id = ?', (selection_ids[0],)).fetchone()
-            
-            if not first_selection:
-                flash('Error: Selección no encontrada.', 'danger')
-                db.close()
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+            # Convertir todos los IDs a enteros para la consulta SQL, previniendo errores de tipo
+            selection_ids_int = tuple(int(id.strip()) for id in selection_ids if id.strip().isdigit())
 
-            # 2. Verificar la contraseña
-            if not check_password_hash(first_selection['selection_password_hash'], password_check):
-                flash('Contraseña de protección incorrecta. No se liberaron los números.', 'danger')
-                db.close()
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-            
-            # 3. Eliminar (Liberar) los números
-            placeholders = ','.join('?' * len(selection_ids))
+            if not selection_ids_int:
+                 flash('Error fatal: La lista de IDs es inválida.', 'danger')
+                 db.close()
+                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+            placeholders = ','.join('?' * len(selection_ids_int))
             
             try:
-                db.execute(f'DELETE FROM selection WHERE id IN ({placeholders})', selection_ids)
+                db.execute(f'DELETE FROM selection WHERE id IN ({placeholders})', selection_ids_int)
                 db.commit()
                 flash('¡Números liberados exitosamente! Ya están disponibles para compra.', 'success')
             except Exception as e:
@@ -771,10 +817,11 @@ def detalle_rifa(raffle_id):
                 db.close()
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
-        # Reintroducir la lógica de Marcar Cancelado (Solo Superusuario)
+        # --- Lógica de Marcar Cancelado (Solo Superusuario) ---
         elif action == 'mark_canceled' and current_user.is_authenticated and current_user.is_superuser():
             selection_ids_str = request.form.get('selection_ids')
-            if not selection_ids_str:
+            
+            if not selection_ids_str or selection_ids_str.strip() == "":
                 flash('Error: No se proporcionaron IDs para cancelar.', 'danger')
                 db.close()
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))

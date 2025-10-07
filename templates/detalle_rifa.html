@@ -6,7 +6,7 @@
 
 {% block content %}
 
-<!-- INPUT OCULTO: Usado por JS para obtener el ID de la rifa en el modal -->
+<!-- CRÍTICO: INPUT OCULTO para pasar el ID de la rifa al JS, usado por detalle_btns.js -->
 <input type="hidden" id="raffle_id_input" value="{{ rifa.id }}">
 
 <div class="container-fluid max-w-7xl mx-auto p-4 md:p-8">
@@ -275,7 +275,8 @@
                         <div class="action-buttons mt-auto pt-3 border-top {{ border_color | replace('300', '200') }} d-flex flex-column gap-2">
                             
                             <!-- Botón 1: LIBERAR NÚMEROS (Requiere Contraseña de Protección) -->
-                            <button onclick="openDeleteModal('{{ selection_ids_list }}', '{{ group.customer_name }}', '{{ numbers_list }}')"
+                            <!-- CRÍTICO: Uso de | tojson para la transferencia segura de datos al JS -->
+                            <button onclick="openDeleteModal({{ selection_ids_list | tojson }}, {{ group.customer_name | tojson }}, {{ numbers_list | tojson }})"
                                     class="btn btn-sm w-100 inline-flex items-center justify-content-center font-medium rounded-xl transition bg-red-600 text-white hover:bg-red-700"
                                     data-bs-toggle="modal" 
                                     data-bs-target="#delete-modal-bs">
