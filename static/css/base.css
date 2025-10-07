@@ -79,25 +79,24 @@ body {
 
 
 /* --- ESTILOS DEL FOOTER --- */
-/* CORRECCIÓN: Asegura que el footer se mantenga abajo y visible */
+/* CAMBIO: Estilos para un footer fijo con efecto blur */
 .footer-custom {
-    background-color: #374151; /* Gray-700 */
-    color: #d1d5db; /* Gray-300 */
-    padding: 1.5rem 1rem;
+    /* Fondo semi-transparente para que el blur sea visible */
+    background-color: rgba(248, 249, 250, 0.85); /* Gris claro semi-transparente */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px); /* Para compatibilidad con Safari */
+    
+    color: #374151; /* Texto oscuro para contraste */
+    padding: 1.25rem 1rem;
     text-align: center;
     position: fixed; /* Lo fija en la parte inferior */
     bottom: 0;
     left: 0;
     width: 100%;
     z-index: 900;
+    border-top: 1px solid rgba(0, 0, 0, 0.05); /* Borde superior sutil */
 }
 
 .footer-custom a {
     color: #ffffff;
-    font-weight: 600;
-    text-decoration: none;
-}
-
-.footer-custom a:hover {
-    text-decoration: underline;
-}
+/* ... existing code ... */

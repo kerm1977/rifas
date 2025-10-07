@@ -1,7 +1,9 @@
-<!-- Pie de Página (Tailwind) -->
-<footer class="bg-gray-800 p-4 mt-8 text-center">
+<!-- ... existing code ... -->
+<!-- Pie de Página con clase personalizada para efecto blur -->
+<footer class="footer-custom">
     <div class="container">
-        <span class="text-warning">Hecho con ❤️ Por La Tribu de Los Libres - 2025</span>
+        <!-- CAMBIO: Se ajusta el texto y se usa la función de año dinámico -->
+        <span class="font-semibold">Hecho con ❤️ Por La Tribu de Los Libres - {{ now_year() }}</span>
     </div>
 </footer>
     
