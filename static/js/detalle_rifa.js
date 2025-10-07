@@ -1,4 +1,4 @@
-// detall_rifa.js (Lógica JS de Selección/Exportación)
+// detall_rifa.js (Lógica JS de Selección/Exportación - Lógica de Edición/Cancelación Eliminada)
 (function() {
 
 // --- VARIABLES GLOBALES ---
@@ -19,19 +19,23 @@ const modalSelectedNumbersInput = document.getElementById('modal_selected_number
 const modalSubmitButton = document.getElementById('modal_submit_button');
 const modalTotalAmount = document.getElementById('modal_total_amount');
 
-const editModalElement = document.getElementById('edit-modal-bs');
-const cancelConfirmModalElement = document.getElementById('cancel-confirm-modal-bs');
+// Los modales de edición/cancelación se eliminan
+// const editModalElement = document.getElementById('edit-modal-bs');
+// const cancelConfirmModalElement = document.getElementById('cancel-confirm-modal-bs');
 
 let rafflePrice = 0;
 
 // --- FUNCIONES DE UTILIDAD ---
 
 function getRafflePrice() {
+    // Intenta parsear el precio de la rifa desde el modal de info
     const priceElement = document.querySelector('#raffle-info-modal-bs .text-xl.font-extrabold.text-green-600');
     if (priceElement) {
+        // Elimina el símbolo de colón y la coma, luego parsea a float
         const text = priceElement.textContent.replace(/₡|,/g, '').trim();
         return parseFloat(text) || 0;
     }
+    // Valor de respaldo
     return 1000.00; 
 }
 
@@ -80,18 +84,25 @@ function updateFormDisplays(price) {
 function updateButtonStyles(button, isSelectedNow, isSold) {
     const DYNAMIC_COLOR_CLASSES = [
         'bg-pastel-green', 'text-green-800', 'hover:bg-green-300', 'border-green-300', 
-        'bg-pastel-blue', 'text-blue-800', 'hover:bg-blue-300', 'border-blue-300' 
+        'bg-pastel-blue', 'text-blue-800', 'hover:bg-blue-300', 'border-blue-300',
+        'bg-pastel-red', 'text-red-800', 'border-red-700'
     ];
 
     button.classList.remove(...DYNAMIC_COLOR_CLASSES);
     
+    // El color de Cancelado (Verde Sólido) se aplica en Jinja, lo respetamos.
     const isCanceledFromHTML = button.classList.contains('bg-green-500'); 
     
     if (isSold || isCanceledFromHTML) {
         button.disabled = true;
+        // Si está vendido (no cancelado), aseguramos el color rojo pastel
+        if (!isCanceledFromHTML) {
+            button.classList.add('bg-pastel-red', 'text-red-800', 'border-red-700');
+        }
         return;
     } 
     
+    // Si no está vendido/cancelado, manejamos el estado de selección temporal
     if (isSelectedNow) {
         button.classList.add('bg-pastel-blue', 'text-blue-800', 'hover:bg-blue-300', 'border-blue-300'); 
     } else {
@@ -131,16 +142,12 @@ if (numbersGrid) {
 
 // --- FUNCIONES GLOBALES (Llamadas desde HTML) ---
 
-window.submitEditForm = function(action) {
-    const actionInput = document.getElementById('modal-action');
-    const form = document.getElementById('edit-selection-form');
-    if (actionInput && form) {
-        actionInput.value = action;
-        form.submit();
-    } else {
-        alert('Error: No se pudo encontrar el formulario de edición.');
-    }
-}
+// Se eliminan submitEditForm, openEditModal y confirmCancellation
+
+// window.submitEditForm = function(action) { ... }
+// window.openEditModal = function(...) { ... }
+// window.confirmCancellation = function(...) { ... }
+
 
 window.togglePasswordVisibility = function(id) {
     const input = document.getElementById(id);
@@ -155,6 +162,7 @@ window.togglePasswordVisibility = function(id) {
 }
 
 window.returnToSelection = function() {
+    // Se ejecuta al cerrar el modal de selección para asegurar el estado
     updateFormDisplays(rafflePrice);
 }
 
@@ -179,33 +187,6 @@ window.handleZoom = function(direction) {
     }
 }
 
-window.openEditModal = function(selectionIds, numbersList, customerName, customerPhone) {
-    document.getElementById('modal-selection-ids').value = selectionIds;
-    document.getElementById('modal-number-display').textContent = numbersList;
-    document.getElementById('customer_name_display').value = customerName;
-    document.getElementById('customer_phone_display').value = customerPhone;
-    document.getElementById('edit_password').value = ''; 
-    
-    if (typeof bootstrap !== 'undefined' && editModalElement) {
-        const modalInstance = bootstrap.Modal.getInstance(editModalElement) || new bootstrap.Modal(editModalElement);
-        modalInstance.show();
-    }
-}
-
-window.confirmCancellation = function(selectionIds, customerName, isCanceled) {
-    if (isCanceled) return;
-    
-    const numberDisplay = document.getElementById('modal-cancel-customer-name');
-    const idsInput = document.getElementById('modal-cancel-selection-ids');
-    
-    if (numberDisplay) numberDisplay.textContent = customerName;
-    if (idsInput) idsInput.value = selectionIds;
-
-    if (typeof bootstrap !== 'undefined' && cancelConfirmModalElement) {
-        const modalInstance = bootstrap.Modal.getInstance(cancelConfirmModalElement) || new bootstrap.Modal(cancelConfirmModalElement);
-        modalInstance.show();
-    }
-}
 
 // MEJORA: Función de filtrado con contador y mensaje de "no resultados"
 window.filterCards = function() {
@@ -224,8 +205,11 @@ window.filterCards = function() {
         const name = card.dataset.name || '';
         const phone = card.dataset.phone || '';
         const numbers = card.dataset.numbers || ''; 
+        
+        // Convertimos el texto filtrado a una cadena sin espacios ni comas para la búsqueda de números
+        const normalizedFilter = filterText.replace(/[^a-z0-9]/g, '');
 
-        const matches = name.includes(filterText) || phone.includes(filterText) || numbers.includes(filterText);
+        const matches = name.includes(filterText) || phone.includes(filterText) || numbers.includes(normalizedFilter);
 
         if (matches) {
             card.style.display = 'block';

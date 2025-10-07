@@ -135,35 +135,33 @@ def init_db():
     """)
     db.commit()
 
-    # MIGRACIÓN: Asegurar que las nuevas columnas existan
+    # MIGRACIÓN: Asegurar que las nuevas columnas existan (mantenemos esta sección por seguridad)
     try:
         db.execute("ALTER TABLE selection ADD COLUMN is_canceled BOOLEAN DEFAULT 0")
         db.commit()
     except sqlite3.OperationalError:
-        pass # Columna ya existe o error no relacionado
+        pass 
         
     try:
         db.execute("ALTER TABLE raffle ADD COLUMN winning_numbers TEXT DEFAULT '[]'")
         db.commit()
     except sqlite3.OperationalError:
-        pass # Columna ya existe o error no relacionado
+        pass 
         
     try:
-        # MIGRACIÓN: Nuevos campos de pago para la tabla raffle
         db.execute("ALTER TABLE raffle ADD COLUMN sinpe_name_default TEXT")
         db.execute("ALTER TABLE raffle ADD COLUMN sinpe_phone_default TEXT")
         db.commit()
     except sqlite3.OperationalError:
-        pass # Columna ya existe
+        pass 
         
     try:
-        # MIGRACIÓN: Nuevos campos de pago para la tabla selection
         db.execute("ALTER TABLE selection ADD COLUMN payment_method TEXT DEFAULT 'No especificado'")
         db.execute("ALTER TABLE selection ADD COLUMN sinpe_name TEXT")
         db.execute("ALTER TABLE selection ADD COLUMN sinpe_phone TEXT")
         db.commit()
     except sqlite3.OperationalError:
-        pass # Columna ya existe
+        pass 
 
     # 4. Crear Superusuario permanente
     superuser_email = 'kenth1977@gmail.com'
@@ -307,7 +305,7 @@ def ver_rifas():
             r.*, 
             COUNT(s.id) as total_sold_numbers
         FROM raffle r
-        LEFT JOIN selection s ON r.id = s.raffle_id
+        LEFT JOIN selection s ON r.id = s.raffle_id AND s.is_canceled = 0
         GROUP BY r.id
         ORDER BY r.raffle_date DESC
     """).fetchall()
@@ -337,9 +335,9 @@ def crear_rifa():
         data = request.form
         image_file = request.files.get('image')
         
-        payment_method = data.get('payment_method')
-        sinpe_name_default = data.get('sinpe_name_default') if payment_method == 'Sinpe' else None
-        sinpe_phone_default = data.get('sinpe_phone_default') if payment_method == 'Sinpe' else None
+        payment_method_select = data.get('payment_method')
+        sinpe_name_default = data.get('sinpe_name_default') if payment_method_select == 'Sinpe' else None
+        sinpe_phone_default = data.get('sinpe_phone_default') if payment_method_select == 'Sinpe' else None
 
         if not image_file or image_file.filename == '' or not allowed_file(image_file.filename):
             flash('Debe subir una imagen válida (PNG, JPG, JPEG).', 'danger')
@@ -402,7 +400,7 @@ def editar_rifa(raffle_id):
         return redirect(url_for('rifas.ver_rifas'))
 
     db = get_db()
-    rifa = db.execute('SELECT *, sinpe_name_default, sinpe_phone_default FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
+    rifa = db.execute('SELECT * FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
 
     if rifa is None:
         db.close()
@@ -417,9 +415,9 @@ def editar_rifa(raffle_id):
         new_filename = rifa_dict['image_filename']
         filepath = None
         
-        payment_method = data.get('payment_method')
-        sinpe_name_default = data.get('sinpe_name_default') if payment_method == 'Sinpe' else None
-        sinpe_phone_default = data.get('sinpe_phone_default') if payment_method == 'Sinpe' else None
+        payment_method_select = data.get('payment_method')
+        sinpe_name_default = data.get('sinpe_name_default') if payment_method_select == 'Sinpe' else None
+        sinpe_phone_default = data.get('sinpe_phone_default') if payment_method_select == 'Sinpe' else None
 
         try:
             if image_file and image_file.filename != '' and allowed_file(image_file.filename):
@@ -489,12 +487,15 @@ def eliminar_rifa(raffle_id):
         return redirect(url_for('rifas.ver_rifas'))
 
     try:
-        db.execute('DELETE FROM selection WHERE raffle_id = ?', (raffle_id,))
-        db.execute('DELETE FROM raffle WHERE id = ?', (raffle_id,))
-        
+        # Se elimina la imagen física
         image_filepath = os.path.join(current_app.root_path, UPLOAD_FOLDER, rifa['image_filename'])
         if os.path.exists(image_filepath):
             os.remove(image_filepath)
+
+        # Se eliminan los números seleccionados (Foreign Key cascade no está activo, así que se hace manualmente)
+        db.execute('DELETE FROM selection WHERE raffle_id = ?', (raffle_id,))
+        # Se elimina la rifa
+        db.execute('DELETE FROM raffle WHERE id = ?', (raffle_id,))
         
         db.commit()
         flash('Rifa eliminada permanentemente, incluyendo todos sus números vendidos.', 'success')
@@ -597,12 +598,21 @@ def generar_reporte_txt(raffle_id):
         reporte.append("-" * 80)
         
         for row in selections:
+            # is_canceled = 1 indica CANCELADO
             estado = 'CANCELADO' if row['is_canceled'] else 'ACTIVO'
             line = f"{row['number']:<10}{row['customer_name'][:48]:<50}{estado:<15}"
             reporte.append(line)
             
         reporte.append("-" * 80)
-        reporte.append(f"Total de números vendidos/ocupados: {len(selections)}")
+        
+        # Conteo de activos y cancelados
+        total_activos = sum(1 for s in selections if s['is_canceled'] == 0)
+        total_cancelados = len(selections) - total_activos
+        
+        reporte.append(f"Total de números activos: {total_activos}")
+        reporte.append(f"Total de números cancelados: {total_cancelados}")
+        reporte.append(f"Total de números ocupados (Activos + Cancelados): {len(selections)}")
+
         reporte.append("=" * 80)
         
         txt_content = "\n".join(reporte)
@@ -621,7 +631,10 @@ def generar_reporte_txt(raffle_id):
 
 @bp.route('/rifas/<int:raffle_id>', methods=['GET', 'POST'])
 def detalle_rifa(raffle_id):
-    """Vista para detalle de rifa y selección/compra de números."""
+    """
+    Vista para detalle de rifa y selección/compra de números.
+    Maneja SOLO la acción POST de compra/selección.
+    """
     db = get_db()
     rifa = db.execute('SELECT *, sinpe_name_default, sinpe_phone_default FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
     
@@ -638,12 +651,13 @@ def detalle_rifa(raffle_id):
         
     selections = db.execute('SELECT * FROM selection WHERE raffle_id = ?', (raffle_id,)).fetchall()
     
-    # --- MEJORA: Agrupación de selecciones movida de Jinja a Python ---
+    # --- Agrupación de selecciones ---
     grouped_selections = {}
-    total_numbers_occupied = len(selections) # Conteo directo
+    total_numbers_occupied = len(selections) 
     
     for selection in selections:
-        customer_key = f"{selection['customer_name']}|{selection['customer_phone']}"
+        # Usamos el customer_phone como clave principal para agrupar, ya que es único.
+        customer_key = selection['customer_phone'] 
         
         if customer_key not in grouped_selections:
             grouped_selections[customer_key] = {
@@ -660,8 +674,8 @@ def detalle_rifa(raffle_id):
         
         grouped_selections[customer_key]['numbers'].append(selection['number'])
         grouped_selections[customer_key]['selection_ids'].append(selection['id'])
-        # Asumimos que todas las selecciones de un cliente tienen el mismo estado de cancelación
         grouped_selections[customer_key]['is_canceled'] = selection['is_canceled']
+
 
     if request.method == 'POST':
         action = request.form.get('action')
@@ -672,114 +686,54 @@ def detalle_rifa(raffle_id):
             password = request.form.get('selection_password')
             numbers_str = request.form.get('selected_numbers')
             
-            payment_method = 'Efectivo/Otro'
+            payment_method = 'No especificado'
             sinpe_name = None
             sinpe_phone = None
             
             if not name or not phone or not password or not numbers_str:
                 flash('Todos los campos de cliente y contraseña son obligatorios.', 'danger')
+                db.close()
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
-            selected_numbers = [n.strip() for n in numbers_str.split(',')]
+            selected_numbers = [n.strip() for n in numbers_str.split(',') if n.strip()]
+            
+            if not selected_numbers:
+                flash('No se seleccionaron números válidos.', 'danger')
+                db.close()
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
             password_hash = generate_password_hash(password)
             newly_selected = []
             
             try:
                 for number in selected_numbers:
-                    existing = db.execute('SELECT id FROM selection WHERE raffle_id = ? AND number = ?', (raffle_id, number)).fetchone()
+                    # Validar si el número ya está ocupado (activo o cancelado)
+                    formatted_number = f"{int(number):02d}" # Asegurar formato 00
+                    existing = db.execute('SELECT id FROM selection WHERE raffle_id = ? AND number = ?', (raffle_id, formatted_number)).fetchone()
+                    
                     if existing is None:
                         db.execute("""
                             INSERT INTO selection (raffle_id, number, customer_name, customer_phone, selection_password_hash, is_canceled, payment_method, sinpe_name, sinpe_phone)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (raffle_id, number, name, phone, password_hash, 0, payment_method, sinpe_name, sinpe_phone))
-                        newly_selected.append(number)
+                        """, (raffle_id, formatted_number, name, phone, password_hash, 0, payment_method, sinpe_name, sinpe_phone))
+                        
+                        newly_selected.append(formatted_number)
                     else:
                         flash(f'El número {number} ya estaba ocupado y fue omitido.', 'warning')
                 
                 db.commit()
                 if newly_selected:
-                    flash(f'Números {", ".join(newly_selected)} seleccionados exitosamente.', 'success')
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-
+                    flash(f'Números {", ".join(newly_selected)} seleccionados exitosamente y protegidos con contraseña.', 'success')
+                
             except Exception as e:
                 db.rollback()
                 flash(f'Error al guardar la selección: {e}', 'danger')
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
             finally:
                 db.close()
-
-        elif action == 'cancel_selection':
-            if not current_user.is_authenticated or not current_user.is_superuser():
-                flash('Acción denegada. Solo superusuarios pueden cancelar.', 'danger')
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
-            selection_ids_str = request.form.get('selection_ids')
-            if not selection_ids_str:
-                flash('Error: No se proporcionaron IDs para cancelar.', 'danger')
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-
-            selection_ids = tuple(selection_ids_str.split(','))
-            placeholders = ','.join('?' * len(selection_ids))
-
-            try:
-                db.execute(f'UPDATE selection SET is_canceled = 1 WHERE id IN ({placeholders})', selection_ids)
-                db.commit()
-                flash('La selección ha sido marcada como CANCELADA.', 'success')
-            except Exception as e:
-                db.rollback()
-                flash(f'Error al cancelar la selección: {e}', 'danger')
-            finally:
-                db.close()
-            
-            return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-
-        elif action in ['edit_selection', 'delete_selection']:
-            selection_ids_str = request.form.get('selection_ids')
-            password_check = request.form.get('edit_password')
-            
-            if not selection_ids_str:
-                flash('Error: No se proporcionaron IDs de selección.', 'danger')
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-
-            selection_ids = tuple(selection_ids_str.split(','))
-            
-            first_selection_id = selection_ids[0]
-            selection_to_check = db.execute('SELECT selection_password_hash FROM selection WHERE id = ?', (first_selection_id,)).fetchone()
-            
-            if not selection_to_check:
-                flash('Error: Selección no encontrada.', 'danger')
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-
-            password_ok = False
-            if current_user.is_authenticated and current_user.is_superuser():
-                password_ok = True
-            
-            if not password_ok and password_check:
-                if check_password_hash(selection_to_check['selection_password_hash'], password_check):
-                    password_ok = True
-            
-            if not password_ok:
-                flash('Contraseña de edición incorrecta.', 'danger')
-                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-            
-            placeholders = ','.join('?' * len(selection_ids))
-            
-            try:
-                if action == 'delete_selection':
-                    db.execute(f'DELETE FROM selection WHERE id IN ({placeholders})', selection_ids)
-                    db.commit()
-                    flash('Los números han sido liberados.', 'success')
-                
-                elif action == 'edit_selection':
-                    flash('Funcionalidad de Edición no implementada aún.', 'info')
-            except Exception as e:
-                db.rollback()
-                flash(f'Error al realizar la acción: {e}', 'danger')
-            finally:
-                db.close()
-                
-            return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
-
+        # La única acción POST permitida es 'add_selection'.
+        
     db.close()
     return render_template(
         'detalle_rifa.html', 
@@ -807,11 +761,13 @@ def utility_processor():
         return url_for('static', filename='uploads/' + filename)
     
     def now_year():
+        # CORRECCIÓN DE SINTAXIS: Se agrega 'return'
         return datetime.now().year
     
     def get_winner_info(raffle_id, winning_number):
         db = get_db()
         try:
+            # Buscar número ACTIVO
             winner = db.execute(
                 'SELECT customer_name, customer_phone FROM selection WHERE raffle_id = ? AND number = ? AND is_canceled = 0',
                 (raffle_id, winning_number)
@@ -820,6 +776,7 @@ def utility_processor():
             if winner:
                 return dict(winner)
             
+            # Buscar número CANCELADO
             canceled = db.execute(
                 'SELECT customer_name, customer_phone FROM selection WHERE raffle_id = ? AND number = ? AND is_canceled = 1',
                 (raffle_id, winning_number)
