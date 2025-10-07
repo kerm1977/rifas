@@ -1,149 +1,96 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Uso de Flexbox (min-vh-full-center) para centrar el contenido en el viewport -->
-<div class="min-vh-full-center">
-    <div class="w-100 max-w-2xl bg-white p-4 p-md-5 rounded-xl shadow-2xl border border-gray-100">
-        <h1 class="text-3xl font-extrabold text-gray-900 text-center mb-4">Editar Rifa: {{ rifa.name }}</h1>
-        
-        <!-- CORRECCIÓN CLAVE: El action debe apuntar a la ruta de edición con el ID correcto -->
-        <form method="POST" action="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}" enctype="multipart/form-data" class="space-y-4">
+<!-- AÑADIDO: Contenedor para centrar el formulario -->
+<div class="form-container">
+    <div class="card shadow-lg border-0 rounded-xl my-5" style="max-width: 800px; width: 100%;">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="card-title text-center font-extrabold text-3xl text-gray-800 mb-4">Editar Rifa</h1>
             
-            <!-- Imagen Actual y Subida de Nueva Imagen -->
-            <div class="form-group">
-                <label for="image" class="form-label text-sm font-medium text-gray-700">Imagen del Producto (JPG, PNG)</label>
-                <div class="mb-3">
-                    <img src="{{ url_for('static', filename='uploads/' + rifa.image_filename) }}" alt="Imagen actual del premio" class="rounded-lg max-h-32 shadow-md">
-                    <p class="text-xs text-gray-500 mt-1">Imagen actual. Sube una nueva para reemplazarla.</p>
-                </div>
-                <input id="image" name="image" type="file" accept=".jpg,.jpeg,.png"
-                       class="form-control mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-            </div>
-
-            <!-- Número de Rifa y Nombre (Grid de Bootstrap) -->
-            <div class="row g-3">
-                <div class="col-12 col-md-6">
-                    <label for="raffle_number" class="form-label text-sm font-medium text-gray-700">Número de la Rifa (Identificador)</label>
-                    <input id="raffle_number" name="raffle_number" type="text" required value="{{ rifa.raffle_number }}"
-                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="name" class="form-label text-sm font-medium text-gray-700">Nombre de la Rifa</label>
-                    <input id="name" name="name" type="text" required value="{{ rifa.name }}"
-                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-            </div>
-
-            <!-- Precio y Premio (Grid de Bootstrap) -->
-            <div class="row g-3">
-                <div class="col-12 col-md-6">
-                    <label for="price" class="form-label text-sm font-medium text-gray-700">Precio del Número (₡)</label>
-                    <input id="price" name="price" type="number" step="0.01" min="0.01" required value="{{ '%.2f'|format(rifa.price) }}"
-                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <div class="col-12 col-md-6">
-                    <label for="prize" class="form-label text-sm font-medium text-gray-700">Premio</label>
-                    <input id="prize" name="prize" type="text" required value="{{ rifa.prize }}"
-                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-            </div>
-
-            <!-- Detalle de la Rifa -->
-            <div class="form-group">
-                <label for="detail" class="form-label text-sm font-medium text-gray-700">Detalle de la Rifa</label>
-                <textarea id="detail" name="detail" rows="3" required
-                          class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">{{ rifa.detail }}</textarea>
-            </div>
-
-            <!-- NUEVA SECCIÓN: FORMA DE PAGO DE LA RIFA (Dueño) -->
-            <div class="form-group border border-gray-200 p-4 rounded-xl space-y-3">
-                <h3 class="text-lg font-semibold text-gray-800 border-bottom pb-2 mb-3">Información de Pago de la Rifa (Dueño)</h3>
-                <label for="payment_method_rifa" class="form-label text-sm font-medium text-gray-700">Forma de Pago Principal</label>
-                <select id="payment_method_rifa" name="payment_method" required onchange="toggleRifaSinpeFields('payment_method_rifa', 'sinpe_rifa_fields')"
-                        class="form-select px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                    <!-- Precargar el valor guardado en la DB -->
-                    <option value="Sinpe" {% if rifa.sinpe_phone_default %}selected{% endif %}>Sinpe Móvil</option>
-                    <option value="Efectivo" {% if not rifa.sinpe_phone_default %}selected{% endif %}>Efectivo</option>
-                    <option value="Cuenta">Transferencia Bancaria (Cuenta)</option>
-                </select>
-
-                <!-- CAMPOS CONDICIONALES SINPE -->
-                <!-- NOTA: La clase 'd-none' inicial se manejará en JS al cargar la página -->
-                <div id="sinpe_rifa_fields" class="space-y-3 pt-2">
-                    <div>
-                        <!-- CAMBIO: max 40 y oninput Title Case -->
-                        <label for="sinpe_name_default" class="form-label text-sm font-medium text-gray-700">Nombre del Sinpe (Máx 40 letras)</label>
-                        <input type="text" name="sinpe_name_default" id="sinpe_name_default"
-                               pattern="^[A-Za-zñÑáéíóúÁÉÍÓÚ\s]{1,40}$" maxlength="40" title="Máximo 40 letras y espacios"
-                               value="{{ rifa.sinpe_name_default or '' }}"
-                               oninput="this.value=this.value.replace(/(\b[a-z])/g, (match) => match.toUpperCase())"
-                               class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        <p class="text-xs text-gray-500 mt-1">Nombre de la persona o entidad que recibe el pago.</p>
-                    </div>
-                    <div>
-                        <label for="sinpe_phone_default" class="form-label text-sm font-medium text-gray-700">Teléfono Sinpe (8 dígitos)</label>
-                        <input type="text" name="sinpe_phone_default" id="sinpe_phone_default"
-                               pattern="[0-9]{8}" maxlength="8" minlength="8"
-                               oninput="this.value = this.value.replace(/[^0-9]/g, '');"
-                               value="{{ rifa.sinpe_phone_default or '' }}"
-                               class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                        <p class="text-xs text-gray-500 mt-1">Solo 8 dígitos numéricos.</p>
+            <form method="POST" action="{{ url_for('rifas.editar_rifa', raffle_id=rifa.id) }}" enctype="multipart/form-data">
+                <!-- Sección de Imagen -->
+                <div class="mb-4">
+                    <label for="image" class="form-label font-medium text-gray-700">Cambiar Imagen (Opcional)</label>
+                    <div class="d-flex align-items-center">
+                        <img src="{{ get_image_url(rifa.image_filename) }}" alt="Imagen actual" class="img-thumbnail me-3" style="width: 100px; height: 100px; object-fit: cover;">
+                        <input type="file" class="form-control" id="image" name="image" accept=".jpg,.jpeg,.png">
                     </div>
                 </div>
-            </div>
-            
-            <!-- Fecha y Hora (Grid de Bootstrap) -->
-            <div class="row g-3">
-                <div class="col-12 col-md-6">
-                    <label for="raffle_date" class="form-label text-sm font-medium text-gray-700">Fecha de la Rifa</label>
-                    <input id="raffle_date" name="raffle_date" type="date" required value="{{ rifa.raffle_date }}"
-                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                
+                <div class="row g-3">
+                    <!-- Campos de la Rifa -->
+                    <div class="col-md-6">
+                        <label for="raffle_number" class="form-label">Número de la Rifa</label>
+                        <input type="text" class="form-control" id="raffle_number" name="raffle_number" value="{{ rifa.raffle_number }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Nombre de la Rifa</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ rifa.name }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="price" class="form-label">Precio del Número (₡)</label>
+                        <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ rifa.price }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="prize" class="form-label">Premio</label>
+                        <input type="text" class="form-control" id="prize" name="prize" value="{{ rifa.prize }}" required>
+                    </div>
+                    <div class="col-12">
+                        <label for="detail" class="form-label">Detalle</label>
+                        <textarea class="form-control" id="detail" name="detail" rows="3" required>{{ rifa.detail }}</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="raffle_date" class="form-label">Fecha del Sorteo</label>
+                        <input type="date" class="form-control" id="raffle_date" name="raffle_date" value="{{ rifa.raffle_date.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="raffle_time" class="form-label">Hora del Sorteo</label>
+                        <input type="time" class="form-control" id="raffle_time" name="raffle_time" value="{{ rifa.raffle_time or '' }}">
+                    </div>
                 </div>
-                <div class="col-12 col-md-6">
-                    <label for="raffle_time" class="form-label text-sm font-medium text-gray-700">Hora de la Rifa (Opcional)</label>
-                    <input id="raffle_time" name="raffle_time" type="time" value="{{ rifa.raffle_time or '' }}"
-                           class="form-control px-4 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-            </div>
 
-            <!-- Botón de Envío -->
-            <div class="pt-3">
-                <button type="submit"
-                        class="w-full btn bg-green-600 hover:bg-green-700 text-white py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">
-                    Guardar Cambios
-                </button>
-            </div>
-        </form>
+                <!-- Información de Pago de la Rifa -->
+                <div class="mt-4 pt-3 border-top">
+                    <h5 class="font-bold text-lg text-gray-700 mb-3">Información de Pago</h5>
+                    <div class="mb-3">
+                        <label for="payment_method" class="form-label">Forma de Pago Principal</label>
+                        <select id="payment_method" name="payment_method" class="form-select">
+                            <option value="Efectivo" {% if not rifa.sinpe_phone_default %}selected{% endif %}>Efectivo</option>
+                            <option value="Sinpe" {% if rifa.sinpe_phone_default %}selected{% endif %}>Sinpe Móvil</option>
+                        </select>
+                    </div>
+                    <div id="sinpe-details" class="row g-3" style="display: {% if rifa.sinpe_phone_default %}'flex'{% else %}'none'{% endif %};">
+                        <div class="col-md-6">
+                            <label for="sinpe_name_default" class="form-label">Nombre en Sinpe Móvil</label>
+                            <input type="text" id="sinpe_name_default" name="sinpe_name_default" class="form-control" value="{{ rifa.sinpe_name_default or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="sinpe_phone_default" class="form-label">Teléfono Sinpe Móvil</label>
+                            <input type="tel" id="sinpe_phone_default" name="sinpe_phone_default" class="form-control" value="{{ rifa.sinpe_phone_default or '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{{ url_for('rifas.ver_rifas') }}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary bg-indigo-600 hover:bg-indigo-700 border-0">
+                        <i class="fas fa-save me-2"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
-    // Lógica para mostrar/ocultar campos de Sinpe en la edición de rifas
-    function toggleRifaSinpeFields(selectId, fieldsId) {
-        const select = document.getElementById(selectId);
-        const fields = document.getElementById(fieldsId);
-        const sinpeNameInput = document.getElementById('sinpe_name_default');
-        const sinpePhoneInput = document.getElementById('sinpe_phone_default');
-        
-        // CORRECCIÓN: Usamos el valor del SELECT para determinar la visibilidad
-        if (select.value === 'Sinpe') {
-            fields.classList.remove('d-none');
-            // Hacer que los campos de Sinpe sean requeridos
-            // Solo se hacen required si se selecciona "Sinpe"
-            sinpeNameInput.setAttribute('required', 'required');
-            sinpePhoneInput.setAttribute('required', 'required');
+    document.getElementById('payment_method').addEventListener('change', function() {
+        var sinpeDetails = document.getElementById('sinpe-details');
+        if (this.value === 'Sinpe') {
+            sinpeDetails.style.display = 'flex';
         } else {
-            fields.classList.add('d-none');
-            // Remover el atributo required si no es Sinpe
-            sinpeNameInput.removeAttribute('required');
-            sinpePhoneInput.removeAttribute('required');
+            sinpeDetails.style.display = 'none';
         }
-    }
-
-    // Inicializar el estado al cargar la página
-    document.addEventListener('DOMContentLoaded', () => {
-        // Ejecutar la función para establecer el estado inicial basándose en el valor precargado
-        toggleRifaSinpeFields('payment_method_rifa', 'sinpe_rifa_fields');
     });
 </script>
 {% endblock %}

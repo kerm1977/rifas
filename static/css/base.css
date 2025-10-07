@@ -4,9 +4,17 @@
 body {
     font-family: 'Inter', sans-serif;
     background-color: #f8f9fa; /* Un gris muy claro */
-    /* CORRECCIÓN: Añade padding al final para que el footer no tape contenido */
-    padding-bottom: 80px; 
+    /* CORRECCIÓN: Padding para compensar navbar y footer fijos */
+    padding-top: 5rem;    /* Espacio para el navbar fijo */
+    padding-bottom: 5rem; /* Espacio para el footer fijo */
+    min-height: 100vh;
 }
 
-
-
+/* NUEVO: Contenedor para centrar formularios (login, register, crear_rifa) */
+.form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1; /* Permite que el contenedor crezca y ocupe el espacio */
+    padding: 2rem 0; /* Espaciado vertical */
+}

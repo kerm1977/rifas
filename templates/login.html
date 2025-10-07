@@ -1,77 +1,53 @@
-<!-- login.html -->
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Uso de Flexbox (min-vh-full-center) para centrar el contenido en el viewport -->
-<div class="min-vh-full-center">
-    <!-- El contenedor se limita a max-w-md de Tailwind, pero usa p-4 de Bootstrap/Tailwind -->
-    <div class="w-100 max-w-md bg-white p-4 p-md-5 rounded-xl shadow-2xl border border-gray-100">
-        <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-4">Iniciar Sesión</h2>
-        
-        <form method="POST" action="{{ url_for('rifas.login') }}" class="space-y-4">
+<!-- AÑADIDO: Contenedor para centrar el formulario verticalmente -->
+<div class="form-container">
+    <div class="card shadow-lg border-0 rounded-xl" style="max-width: 450px; width: 100%;">
+        <div class="card-body p-4 p-md-5">
+            <h2 class="card-title text-center font-extrabold text-3xl text-gray-800 mb-4">Iniciar Sesión</h2>
             
-            <!-- Campo Email -->
-            <div class="form-group">
-                <label for="email" class="form-label text-sm font-medium text-gray-700">Email</label>
-                <div class="mt-1">
-                    <input id="email" name="email" type="email" autocomplete="email" required
-                           class="form-control px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            <form method="POST" action="{{ url_for('rifas.login') }}">
+                <!-- Campo Email -->
+                <div class="mb-3">
+                    <label for="email" class="form-label font-medium text-gray-700">Correo Electrónico</label>
+                    <input type="email" class="form-control p-3 rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" id="email" name="email" required>
                 </div>
-            </div>
-
-            <!-- Campo Contraseña con Toggle -->
-            <div class="form-group">
-                <label for="password" class="form-label text-sm font-medium text-gray-700">Contraseña</label>
-                <div class="mt-1 input-group rounded-xl shadow-sm">
-                    <input id="password" name="password" type="password" autocomplete="current-password" required
-                           class="form-control pr-10 pl-4 py-3 border border-gray-300 rounded-xl placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    <button type="button" id="togglePassword" class="btn btn-outline-secondary border-0 text-gray-500 hover:text-indigo-600 transition"
-                            style="border-top-right-radius: 0.75rem !important; border-bottom-right-radius: 0.75rem !important;">
-                        <i id="passwordIcon" class="far fa-eye"></i>
-                    </button>
+                
+                <!-- Campo Contraseña con botón para mostrar/ocultar -->
+                <div class="mb-3">
+                    <label for="password" class="form-label font-medium text-gray-700">Contraseña</label>
+                    <div class="input-group">
+                        <input type="password" class="form-control p-3 rounded-lg border-gray-300 focus:border-indigo-500 focus:ring-indigo-500" id="password" name="password" required>
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                            <i class="fas fa-eye-slash" id="passwordIcon"></i>
+                        </button>
+                    </div>
                 </div>
-            </div>
-
-            <!-- Checkbox de Mantener Sesión Activa (Recordarme) -->
-            <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                <label class="form-check-label text-sm text-gray-700" for="remember">
-                    Mantener sesión activa (Recordarme)
-                </label>
-            </div>
-
-            <!-- Enlace a Registro -->
-            <div class="d-flex justify-content-end align-items-center pt-2">
-                <div class="text-sm">
-                    <a href="{{ url_for('rifas.register') }}" class="font-medium text-indigo-600 hover:text-indigo-500 transition">
-                        ¿No tienes cuenta? Regístrate aquí
-                    </a>
+                
+                <!-- Checkbox Recordarme -->
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                    <label class="form-check-label" for="remember">
+                        Recordarme
+                    </label>
                 </div>
-            </div>
-
-            <!-- Botón de Envío -->
-            <div class="pt-3">
-                <button type="submit"
-                        class="w-full btn bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
-                    Iniciar Sesión
+                
+                <!-- Botón de Envío -->
+                <button type="submit" class="btn btn-primary w-100 p-3 rounded-lg font-bold text-lg bg-indigo-600 hover:bg-indigo-700 border-0">
+                    <i class="fas fa-sign-in-alt me-2"></i> Ingresar
                 </button>
+            </form>
+            
+            <!-- Enlace a Registro -->
+            <div class="text-center mt-4">
+                <p class="text-gray-600">¿No tienes cuenta? <a href="{{ url_for('rifas.register') }}" class="text-indigo-600 font-semibold hover:underline">Regístrate aquí</a></p>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
-<script>
-    document.getElementById('togglePassword').addEventListener('click', function (e) {
-        const passwordInput = document.getElementById('password');
-        const passwordIcon = document.getElementById('passwordIcon');
-        
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
-        
-        // Cambiar el icono del ojo
-        passwordIcon.classList.toggle('fa-eye-slash');
-        passwordIcon.classList.toggle('fa-eye');
-    });
-</script>
+<!-- Script para mostrar/ocultar contraseña -->
 
 {% endblock %}
+
