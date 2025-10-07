@@ -19,24 +19,23 @@ const modalSelectedNumbersInput = document.getElementById('modal_selected_number
 const modalSubmitButton = document.getElementById('modal_submit_button');
 const modalTotalAmount = document.getElementById('modal_total_amount');
 
-// Los modales de edición/cancelación se eliminan
-// const editModalElement = document.getElementById('edit-modal-bs');
-// const cancelConfirmModalElement = document.getElementById('cancel-confirm-modal-bs');
-
 let rafflePrice = 0;
 
 // --- FUNCIONES DE UTILIDAD ---
 
 function getRafflePrice() {
-    // Intenta parsear el precio de la rifa desde el modal de info
-    const priceElement = document.querySelector('#raffle-info-modal-bs .text-xl.font-extrabold.text-green-600');
-    if (priceElement) {
-        // Elimina el símbolo de colón y la coma, luego parsea a float
-        const text = priceElement.textContent.replace(/₡|,/g, '').trim();
-        return parseFloat(text) || 0;
+    // CORRECCIÓN: Se lee el precio directamente de un input oculto para garantizar
+    // que el valor sea exacto y no dependa de la estructura del DOM.
+    const priceInput = document.getElementById('raffle_price_input');
+    if (priceInput && priceInput.value) {
+        const price = parseFloat(priceInput.value);
+        // Si el parseo falla, retorna 0 para evitar errores de cálculo.
+        return isNaN(price) ? 0 : price;
     }
-    // Valor de respaldo
-    return 1000.00; 
+    
+    // Valor de respaldo SOLO si el input no se encuentra.
+    console.error("Error: Elemento #raffle_price_input no encontrado. Usando precio de respaldo.");
+    return 1000.00;
 }
 
 function updateFormDisplays(price) {
@@ -141,13 +140,6 @@ if (numbersGrid) {
 }
 
 // --- FUNCIONES GLOBALES (Llamadas desde HTML) ---
-
-// Se eliminan submitEditForm, openEditModal y confirmCancellation
-
-// window.submitEditForm = function(action) { ... }
-// window.openEditModal = function(...) { ... }
-// window.confirmCancellation = function(...) { ... }
-
 
 window.togglePasswordVisibility = function(id) {
     const input = document.getElementById(id);

@@ -8,6 +8,8 @@
 
 <!-- CRÍTICO: INPUT OCULTO para pasar el ID de la rifa al JS, usado por detalle_btns.js -->
 <input type="hidden" id="raffle_id_input" value="{{ rifa.id }}">
+<!-- CORRECCIÓN: Se añade un input oculto para pasar el precio exacto al JS y evitar errores de cálculo -->
+<input type="hidden" id="raffle_price_input" value="{{ rifa.price }}">
 
 <!-- INICIO: MODAL DE INFORMACIÓN 100% CSS -->
 <!-- 1. El Checkbox (oculto) que controla el estado del modal -->
@@ -247,7 +249,7 @@
                 </p>
                 <p class="mb-0 text-gray-700">
                     <i class="fas fa-users me-2 text-indigo-500"></i>
-                    <strong>{{ grouped_selections | length }}</strong> clientes únicos.
+                    <strong>{{ grouped_selections | length }}</strong> Caminante únicos.
                 </p>
             </div>
             <div class="col-md-6 mt-3 mt-md-0">
