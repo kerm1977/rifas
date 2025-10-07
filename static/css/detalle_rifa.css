@@ -91,4 +91,16 @@ body {
     text-decoration: underline;
 }
 
+/* --- CORRECCIÓN BOTÓN FLOTANTE --- */
+/* Asegura que el botón flotante para seleccionar números en móvil
+   aparezca por encima del footer fijo. */
+#floating-select-button {
+    /* El footer tiene una altura de 4rem y un z-index de 900. */
+    
+    /* 1. Posicionarlo por encima del footer. */
+    /* 4rem (altura footer) + 1rem (margen) = 5rem */
+    bottom: 5rem; 
 
+    /* 2. Asegurar que tenga una capa superior al footer. */
+    z-index: 950; /* Mayor que 900 */
+}
