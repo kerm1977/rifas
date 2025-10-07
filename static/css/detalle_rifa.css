@@ -59,6 +59,17 @@ body {
     }
 }
 
+/* --- COLORES PERSONALIZADOS PARA ESTADOS --- */
+/* Estos colores se usan en la cuadrícula de números y en las tarjetas de cliente.
+   Se definen aquí porque no son parte del set estándar de Tailwind CSS. */
+.bg-pastel-green { background-color: #d1fae5; } /* Tailwind green-100 */
+.bg-pastel-red { background-color: #fee2e2; }   /* Tailwind red-100 */
+.bg-pastel-blue { background-color: #dbeafe; }  /* Tailwind blue-100 */
+
+/* Las clases con diagonales (usadas para opacidad en Tailwind) deben escaparse en CSS puro */
+.bg-pastel-green\/50 { background-color: rgba(209, 250, 229, 0.5); }
+.bg-pastel-red\/50 { background-color: rgba(254, 226, 226, 0.5); }
+
 
 /* --- ESTILOS DEL FOOTER --- */
 .footer-custom {
@@ -104,3 +115,4 @@ body {
     /* 2. Asegurar que tenga una capa superior al footer. */
     z-index: 950; /* Mayor que 900 */
 }
+
