@@ -633,7 +633,7 @@ def generar_reporte_txt(raffle_id):
 def detalle_rifa(raffle_id):
     """
     Vista para detalle de rifa y selección/compra de números.
-    Maneja SOLO la acción POST de compra/selección.
+    Maneja la acción POST de compra/selección y ahora la eliminación por contraseña.
     """
     db = get_db()
     rifa = db.execute('SELECT *, sinpe_name_default, sinpe_phone_default FROM raffle WHERE id = ?', (raffle_id,)).fetchone()
@@ -732,7 +732,70 @@ def detalle_rifa(raffle_id):
                 db.close()
                 return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
 
-        # La única acción POST permitida es 'add_selection'.
+        elif action == 'delete_selection':
+            password_check = request.form.get('delete_password')
+            selection_ids_str = request.form.get('selection_ids')
+            
+            if not password_check or not selection_ids_str:
+                flash('Faltan datos (Contraseña o IDs de selección).', 'danger')
+                db.close()
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+            selection_ids = tuple(selection_ids_str.split(','))
+            
+            # 1. Obtener el hash de contraseña de la primera selección para verificación
+            first_selection = db.execute('SELECT selection_password_hash FROM selection WHERE id = ?', (selection_ids[0],)).fetchone()
+            
+            if not first_selection:
+                flash('Error: Selección no encontrada.', 'danger')
+                db.close()
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+            # 2. Verificar la contraseña
+            if not check_password_hash(first_selection['selection_password_hash'], password_check):
+                flash('Contraseña de protección incorrecta. No se liberaron los números.', 'danger')
+                db.close()
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+            
+            # 3. Eliminar (Liberar) los números
+            placeholders = ','.join('?' * len(selection_ids))
+            
+            try:
+                db.execute(f'DELETE FROM selection WHERE id IN ({placeholders})', selection_ids)
+                db.commit()
+                flash('¡Números liberados exitosamente! Ya están disponibles para compra.', 'success')
+            except Exception as e:
+                db.rollback()
+                flash(f'Error al liberar la selección: {e}', 'danger')
+            finally:
+                db.close()
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+        # Reintroducir la lógica de Marcar Cancelado (Solo Superusuario)
+        elif action == 'mark_canceled' and current_user.is_authenticated and current_user.is_superuser():
+            selection_ids_str = request.form.get('selection_ids')
+            if not selection_ids_str:
+                flash('Error: No se proporcionaron IDs para cancelar.', 'danger')
+                db.close()
+                return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+
+            selection_ids = tuple(selection_ids_str.split(','))
+            placeholders = ','.join('?' * len(selection_ids))
+
+            try:
+                # Marcar como cancelado (1)
+                db.execute(f'UPDATE selection SET is_canceled = 1 WHERE id IN ({placeholders})', selection_ids)
+                db.commit()
+                flash('La selección ha sido marcada como CANCELADA (Admin).', 'warning')
+            except Exception as e:
+                db.rollback()
+                flash(f'Error al cancelar la selección: {e}', 'danger')
+            finally:
+                db.close()
+            
+            return redirect(url_for('rifas.detalle_rifa', raffle_id=raffle_id))
+            
+        # El resto de acciones POST (si las hubiera)
         
     db.close()
     return render_template(
@@ -761,7 +824,6 @@ def utility_processor():
         return url_for('static', filename='uploads/' + filename)
     
     def now_year():
-        # CORRECCIÓN DE SINTAXIS: Se agrega 'return'
         return datetime.now().year
     
     def get_winner_info(raffle_id, winning_number):
