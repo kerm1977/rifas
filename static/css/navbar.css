@@ -75,7 +75,8 @@
 }
 
 /* Estilos para pantalla grande (Desktop) */
-@media (min-width: 768px) {
+/* CORRECCIÓN: Se cambió el breakpoint de 768px a 1024px para que coincida con la lógica del resto de la página */
+@media (min-width: 1024px) {
     #nav-toggler {
         display: none; /* Ocultar hamburguesa */
     }
@@ -90,4 +91,3 @@
         padding: -0.5rem;
     }
 }
-
