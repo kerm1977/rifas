@@ -75,7 +75,7 @@
 }
 
 /* Estilos para pantalla grande (Desktop) */
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
     #nav-toggler {
         display: none; /* Ocultar hamburguesa */
     }
@@ -84,6 +84,10 @@
         flex-direction: row;
         width: auto;
         margin-left: auto; /* Alinea a la derecha */
+    }
+
+    .navbar-custom {   
+        padding: -0.5rem;
     }
 }
 

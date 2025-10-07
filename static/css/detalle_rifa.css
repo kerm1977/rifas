@@ -1,72 +1,94 @@
-/* --------------------------------------------------------------------------------
-   ESTILOS ESPECÍFICOS PARA DETALLE DE RIFA
-   Movidos desde detalle_rifa.html y base.css para una separación limpia.
--------------------------------------------------------------------------------- */
+/* Archivo: base.css */
 
-/* --- Colores Pastel (Si no están en un archivo base de Tailwind) --- */
-/* Si estos ya están en base.css, se pueden eliminar de aquí. Los dejo por si acaso. */
-.bg-pastel-green { background-color: #d1e7dd; } /* Success light */
-.bg-pastel-red { background-color: #f8d7da; } /* Danger light */
-.bg-pastel-blue { background-color: #cff4fc; } /* Info light */
-
-
-/* --- CSS para el efecto de difuminado en el scroll (scrolling-fade) --- */
-
-.scrolling-fade {
-    /* Permite que la sombra del scroll esté sobre el contenido */
-    position: relative; 
-    /* Oculta el scrollbar en Webkit (Chrome, Safari) */
-    overflow-y: scroll;
-}
-.scrolling-fade::-webkit-scrollbar {
-    display: none; /* Oculta el scrollbar */
-}
-.scrolling-fade {
-    -ms-overflow-style: none; /* Oculta el scrollbar en IE y Edge */
-    scrollbar-width: none; /* Oculta el scrollbar en Firefox */
+/* --- Estilos Generales y Reset --- */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8f9fa; /* Un gris muy claro */
+    /* CAMBIO: Padding superior e inferior para compensar navbar y footer fijos */
+    padding-top: 5rem;    /* Espacio para el navbar fijo */
+    padding-bottom: 5rem; /* Espacio para el footer fijo */
 }
 
-/* El pseudo-elemento que crea el efecto de difuminado en la parte inferior */
-.scrolling-fade::after {
-    content: "";
-    position: absolute;
+/* --- ESTILOS DEL NAVBAR (MENÚ) --- */
+/* Contenedor principal del Navbar */
+.navbar-custom {
+    /* Estilos de fondo y blur sin cambios */
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: saturate(180%) blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 0 1rem; /* Padding horizontal */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    display: flex; /* Para centrar el contenido interno */
+    justify-content: center; /* Centra el inner-container */
+    flex-direction: column; /* Para que el menú móvil se posicione correctamente */
+}
+
+/* NUEVO: Contenedor interno para controlar la altura y el ancho máximo del contenido */
+.navbar-inner-container {
+    height: 3.5rem; /* Altura reducida para móvil */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 1280px; /* Coincide con max-w-7xl de Tailwind */
+}
+
+/* ... existing styles for .navbar-brand, #nav-toggler, .nav-link ... */
+
+/* Estilos para pantalla grande (Desktop) */
+@media (min-width: 1024px) {
+    /* CAMBIO: Se restaura la altura original en PC */
+    .navbar-inner-container {
+        height: 4rem;
+    }
+
+    #nav-toggler {
+        display: none; /* Ocultar hamburguesa */
+    }
+    #nav-menu {
+        display: flex; /* Mostrar enlaces en fila */
+        flex-direction: row;
+        width: auto;
+        margin-left: auto; /* Alinea a la derecha */
+    }
+}
+
+
+/* --- ESTILOS DEL FOOTER --- */
+.footer-custom {
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: saturate(180%) blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    
+    color: #4b5563; /* Gray-600 */
+    padding: 1rem;
+    text-align: center;
+    position: fixed;
     bottom: 0;
     left: 0;
-    right: 0;
-    /* Gradiente de transparencia a blanco, creando el efecto de difuminado */
-    background: linear-gradient(to top, 
-        rgba(255, 255, 255, 1) 5%, /* Blanco sólido en la base */
-        rgba(255, 255, 255, 0.8) 15%, 
-        rgba(255, 255, 255, 0) 100%);
-    /* Ajustar la altura para que el difuminado sea visible */
-    height: 3rem; /* 48px */
-    pointer-events: none; /* Asegura que el gradiente no bloquee el clic */
+    width: 100%;
+    z-index: 900;
+    height: 4rem; /* Altura fija para consistencia */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.footer-custom a {
+    color: #4f46e5; /* Indigo */
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.footer-custom a:hover {
+    text-decoration: underline;
 }
 
 
-/* --- CSS para forzar Modal de Selección a Pantalla Completa en Móvil (hasta 991px) --- */
-
-@media (max-width: 991.98px) {
-    /* Seleccionamos específicamente el modal de selección */
-    #selection-modal-bs .modal-dialog {
-        /* Fuerza la ocupación de toda la pantalla en móvil */
-        width: 100vw !important;
-        max-width: 100vw !important;
-        height: 100vh !important;
-        margin: 0 !important;
-        /* Asegura que el modal-content ocupe el espacio */
-        display: flex;
-        align-items: center;
-    }
-    
-    #selection-modal-bs .modal-content {
-        /* Esto es crucial para que el contenido dentro del modal tenga scroll si es necesario */
-        height: 100vh !important;
-        border-radius: 0 !important; /* Quitar redondeo en pantalla completa */
-    }
-
-    /* Asegurar que el body del modal pueda tener scroll si es necesario */
-    #selection-modal-bs .modal-body {
-        overflow-y: auto;
-    }
-}
