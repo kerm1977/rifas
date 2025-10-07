@@ -1,34 +1,36 @@
-<!-- CORRECCIÓN: Se elimina el enlace roto a 'movies.browse_files' y se estructura la navegación correctamente. -->
-<nav class="bg-gray-800/80 text-white sticky top-0 z-50 shadow-lg">
+<!-- navbar.html -->
+<nav class="navbar-custom">
     <div class="container-fluid max-w-7xl mx-auto px-4">
         <div class="d-flex justify-content-between align-items-center h-16">
             <!-- Logo y Nombre -->
             <div class="flex-shrink-0">
-                <a href="{{ url_for('rifas.ver_rifas') }}" class="d-flex align-items-center text-white text-decoration-none">
+                <!-- CAMBIO: Se remueve la clase de color 'text-white' y se añade 'text-decoration-none' para un look limpio -->
+                <a href="{{ url_for('rifas.ver_rifas') }}" class="d-flex align-items-center text-decoration-none">
                     <i class="fas fa-ticket-alt text-2xl text-indigo-400 me-2"></i>
-                    <span class="font-bold text-xl">Rifas CR</span>
+                    <!-- CAMBIO: Se añade la clase 'navbar-brand' para aplicar el estilo de color y fuente desde el CSS -->
+                    <span class="navbar-brand">Rifas CR</span>
                 </a>
             </div>
 
             <!-- Menú de Navegación (Desktop) -->
             <div class="d-none d-lg-block">
                 <div id="nav-menu" class="d-flex align-items-center space-x-4">
-                    <a href="{{ url_for('rifas.ver_rifas') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+                    <a href="{{ url_for('rifas.ver_rifas') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium">
                         <i class="fas fa-list me-1"></i> Ver Rifas
                     </a>
                     
                     {% if current_user.is_authenticated and current_user.is_superuser() %}
-                    <a href="{{ url_for('rifas.crear_rifa') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+                    <a href="{{ url_for('rifas.crear_rifa') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium">
                         <i class="fas fa-plus-circle me-1"></i> Crear Rifa
                     </a>
                     {% endif %}
 
                     {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('rifas.logout') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+                    <a href="{{ url_for('rifas.logout') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium">
                         <i class="fas fa-sign-out-alt me-1"></i> Cerrar Sesión
                     </a>
                     {% else %}
-                    <a href="{{ url_for('rifas.login') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-700">
+                    <a href="{{ url_for('rifas.login') }}" class="nav-link px-3 py-2 rounded-md text-sm font-medium">
                         <i class="fas fa-sign-in-alt me-1"></i> Iniciar Sesión
                     </a>
                     <a href="{{ url_for('rifas.register') }}" class="btn btn-sm bg-indigo-500 hover:bg-indigo-600 text-white rounded-md font-medium">
@@ -40,7 +42,8 @@
 
             <!-- Botón de Hamburguesa (Móvil) -->
             <div class="d-lg-none">
-                <button id="nav-toggler" type="button" class="btn text-white hover:bg-gray-700">
+                <!-- CAMBIO: Se remueve la clase 'text-white' para que el CSS tome control del color -->
+                <button id="nav-toggler" type="button" class="btn">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
@@ -50,17 +53,18 @@
     <!-- Menú Desplegable (Móvil) -->
     <div id="nav-menu-mobile" class="d-lg-none d-none">
         <div class="px-2 pt-2 pb-3 space-y-1">
-            <a href="{{ url_for('rifas.ver_rifas') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700">Ver Rifas</a>
+            <a href="{{ url_for('rifas.ver_rifas') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium">Ver Rifas</a>
             {% if current_user.is_authenticated and current_user.is_superuser() %}
-            <a href="{{ url_for('rifas.crear_rifa') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700">Crear Rifa</a>
+            <a href="{{ url_for('rifas.crear_rifa') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium">Crear Rifa</a>
             {% endif %}
             
             {% if current_user.is_authenticated %}
-            <a href="{{ url_for('rifas.logout') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700">Cerrar Sesión</a>
+            <a href="{{ url_for('rifas.logout') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium">Cerrar Sesión</a>
             {% else %}
-            <a href="{{ url_for('rifas.login') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700">Iniciar Sesión</a>
-            <a href="{{ url_for('rifas.register') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium hover:bg-gray-700">Registrarse</a>
+            <a href="{{ url_for('rifas.login') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium">Iniciar Sesión</a>
+            <a href="{{ url_for('rifas.register') }}" class="nav-link d-block px-3 py-2 rounded-md text-base font-medium">Registrarse</a>
             {% endif %}
         </div>
     </div>
 </nav>
+

@@ -1,0 +1,22 @@
+/* --- ESTILOS DEL FOOTER --- */
+/* CAMBIO: Estilos para un footer fijo con efecto blur */
+.footer-custom {
+    /* Fondo semi-transparente para que el blur sea visible */
+    background-color: rgba(248, 249, 250, 0.85); /* Gris claro semi-transparente */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px); /* Para compatibilidad con Safari */
+    
+    color: #374151; /* Texto oscuro para contraste */
+    padding: 1.25rem 1rem;
+    text-align: center;
+    position: fixed; /* Lo fija en la parte inferior */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 900;
+    border-top: 1px solid rgba(0, 0, 0, 0.05); /* Borde superior sutil */
+}
+
+.footer-custom a {
+    color: #ffffff;
+/* ... existing code ... */
